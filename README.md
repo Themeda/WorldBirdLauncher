@@ -1,16 +1,16 @@
 **English** | [简体中文](README.zh-CN.md)
 
-# MCSL
+# WorldBirdLauncher
 
-MCSL (Minecraft Server List Launcher) is a Minecraft server browser and launcher client for Windows 10 and 11.
-This repository contains a source snapshot of the MCSL client dated **2026-10-24** and is licensed under the MIT License.
+WorldBirdLauncher (WBL) is a Minecraft server browser and launcher client for Windows 10 and 11.
+This repository contains a source snapshot of the WorldBirdLauncher client dated **2026-10-24** and is licensed under the MIT License.
 
 ## Current client features
 
 - Browse, search, filter, and sort Minecraft servers from the server-delivered catalog.
 - Display server status, MOTD, connection routes, mod loaders, versions, and listing information.
 - Support local latency testing, favorites, play history, and full-size server-detail images.
-- Support Microsoft, external Yggdrasil, and UnifiedPass login; the Lite edition does not provide offline login.
+- Support Microsoft, external Yggdrasil, and UnifiedPass login; the current public edition does not provide offline login.
 - Support Java detection, version isolation, integrity checks, game launching, and direct server join.
 - Support installing Fabric, Quilt, Forge, NeoForge, and OptiFine.
 - Support modpack imports, mod search and downloads, and a resource download queue.
@@ -30,19 +30,19 @@ The client targets both `net8.0-windows` and `net48`. Official distribution uses
 Run the following from the repository root:
 
 ```powershell
-dotnet build MCSL.sln
+dotnet build WBL.sln
 ```
 
-To build only the Lite edition:
+To build only the current public edition:
 
 ```powershell
-dotnet build src\McServerList.App\McServerList.App.csproj -p:LiteEdition=true
+dotnet build src\WorldBirdLauncher.App\WorldBirdLauncher.App.csproj -p:LiteEdition=true
 ```
 
 ## Test
 
 ```powershell
-dotnet test tests\McServerList.Core.Tests\McServerList.Core.Tests.csproj
+dotnet test tests\WorldBirdLauncher.Core.Tests\WorldBirdLauncher.Core.Tests.csproj
 ```
 
 ## Create the net48 single-file executable
@@ -54,7 +54,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts\pack-net48.ps1 -Lite
 Output:
 
 ```text
-publish\_staging-lite\MCSL-Lite.exe
+publish\_staging-lite\WBL.exe
 ```
 
 The packaging script appends the compressed runtime dependencies to the end of the executable. At startup, the built-in AssemblyResolve entry point loads them.
@@ -62,13 +62,13 @@ The packaging script appends the compressed runtime dependencies to the end of t
 ## Project structure
 
 ```text
-MCSL.sln
+WBL.sln
 src/
-  McServerList.App/       WPF client
-  McServerList.Core/      Launcher core logic
-  McServerList.Shared/    Platform-neutral models, protocols, and compatibility layer
+  WorldBirdLauncher.App/       WPF client
+  WorldBirdLauncher.Core/      Launcher core logic
+  WorldBirdLauncher.Shared/    Platform-neutral models, protocols, and compatibility layer
 tests/
-  McServerList.Core.Tests/
+  WorldBirdLauncher.Core.Tests/
 scripts/
   pack-net48.ps1
 ```

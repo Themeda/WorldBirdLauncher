@@ -1,0 +1,155 @@
+<Window x:Class="WorldBirdLauncher.App.Views.SubmitServerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="提交服务器" Width="620" Height="640" MinHeight="520"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        FontFamily="Microsoft YaHei UI, Segoe UI">
+    <Border Background="{DynamicResource BgBrush}" CornerRadius="12" BorderBrush="{DynamicResource BorderBrush2}"
+            BorderThickness="1">
+        <Border.Resources>
+            <!-- 表单字段标签：放在输入框上方 -->
+            <Style x:Key="FieldLabel" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="Margin" Value="0,8,0,3" />
+                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+            </Style>
+            <Style x:Key="FieldHint" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="10" />
+                <Setter Property="Margin" Value="0,3,0,0" />
+                <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+            </Style>
+        </Border.Resources>
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+
+            <Grid Grid.Row="0" Height="38" Background="Transparent" MouseLeftButtonDown="OnTitleBarDrag">
+                <TextBlock Text="提交服务器" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
+                           Margin="16,0,0,0" Foreground="{DynamicResource TextPrimaryBrush}" />
+                <Button Content="✕" Style="{StaticResource CloseTitleBarButton}" HorizontalAlignment="Right"
+                        Click="OnCancel" />
+            </Grid>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel Margin="20,0,20,0">
+                    <TextBlock x:Name="StepHint" FontSize="11" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextMutedBrush}"
+                               Text="先选提交方式：如果你已经在论坛/贴吧/百科发过宣传贴，只填网址即可；否则请手动填写完整信息。" />
+
+                    <!-- 第一步：选方式 -->
+                    <StackPanel x:Name="ModePanel" Margin="0,12,0,0">
+                        <TextBlock Text="选择提交方式 *" Style="{StaticResource FieldLabel}" />
+                        <RadioButton x:Name="ModeThread" Content="已有宣传贴（只需要填宣传贴网址）" FontSize="13"
+                                     IsChecked="True" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <RadioButton x:Name="ModeForm" Content="手动填写（加载完整表单）" FontSize="13" Margin="0,8,0,0"
+                                     Foreground="{DynamicResource TextSecondaryBrush}" />
+                    </StackPanel>
+
+                    <!-- 宣传贴模式 -->
+                    <StackPanel x:Name="ThreadPanel" Margin="0,14,0,0">
+                        <TextBlock Text="宣传贴网址 *（必须 http/https 开头）" Style="{StaticResource FieldLabel}" />
+                        <TextBox x:Name="ThreadUrlBox" Height="32"
+                                 ToolTip="例如 https://www.mcbbs.co/thread-xxxx-1-1.html" />
+                        <TextBlock Text="我们只记录这个链接，由人工打开帖子核对信息；不会抓取帖子内容。"
+                                   FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextMutedBrush}" />
+                    </StackPanel>
+
+                    <!-- 手动填写模式 -->
+                    <StackPanel x:Name="FormPanel" Margin="0,14,0,0" Visibility="Collapsed">
+                        <TextBlock Text="必填项" FontSize="12" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="服务器名称 *" Style="{StaticResource FieldLabel}" />
+                        <TextBox x:Name="NameBox" Height="32" ToolTip="例如：方块转生 / 梦想天堂" />
+                        <TextBlock Text="服务器地址 *（域名或 IP；没有直连地址就填下面的网盘链接）"
+                                   Style="{StaticResource FieldLabel}" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="AddressBox" Width="330" Height="32" ToolTip="例如 play.example.com" />
+                            <TextBlock Text="端口" FontSize="11" VerticalAlignment="Center" Margin="10,0,6,0"
+                                       Foreground="{DynamicResource TextSecondaryBrush}" />
+                            <TextBox x:Name="PortBox" Width="90" Height="32" Text="25565" ToolTip="默认 25565" />
+                        </StackPanel>
+                        <TextBlock Text="选填项（填得越全，审核越快）" FontSize="12" FontWeight="SemiBold" Margin="0,14,0,0"
+                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                        <TextBlock Text="支持版本 / 跨版本区间（可空）" Style="{StaticResource FieldLabel}" />
+                        <StackPanel Orientation="Horizontal">
+                            <TextBox x:Name="VersionBox" Width="200" Height="32" ToolTip="例如 1.20.x / 26.2" />
+                            <TextBox x:Name="RangeBox" Width="240" Height="32" Margin="10,0,0,0"
+                                     ToolTip="例如 1.8.x ~ 1.19.x" />
+                        </StackPanel>
+                        <TextBlock Text="加载器 / 登录方式" Style="{StaticResource FieldLabel}" />
+                        <StackPanel Orientation="Horizontal">
+                            <ComboBox x:Name="LoaderBox" Width="140" Height="32">
+                                <ComboBoxItem Content="原版" IsSelected="True" />
+                                <ComboBoxItem Content="Forge" />
+                                <ComboBoxItem Content="Fabric" />
+                                <ComboBoxItem Content="NeoForge" />
+                                <ComboBoxItem Content="其他" />
+                            </ComboBox>
+                            <ComboBox x:Name="LoginBox" Width="180" Height="32" Margin="10,0,0,0">
+                                <ComboBoxItem Content="无验证（离线可进）" IsSelected="True" />
+                                <ComboBoxItem Content="正版验证" />
+                                <ComboBoxItem Content="皮肤站登录" />
+                                <ComboBoxItem Content="白名单验证" />
+                            </ComboBox>
+                        </StackPanel>
+                        <TextBlock Text="服务器类型 / QQ 群号 / 官网（可空）" Style="{StaticResource FieldLabel}" />
+                        <StackPanel Orientation="Horizontal">
+                            <ComboBox x:Name="TypeBox" Width="140" Height="32">
+                                <ComboBoxItem Content="公益服" IsSelected="True" />
+                                <ComboBoxItem Content="商业服" />
+                                <ComboBoxItem Content="半公益" />
+                            </ComboBox>
+                            <TextBox x:Name="QqBox" Width="90" Height="32" Margin="10,0,0,0" ToolTip="QQ 群号" />
+                            <TextBox x:Name="SiteBox" Width="230" Height="32" Margin="10,0,0,0" ToolTip="官网（可空）" />
+                        </StackPanel>
+                        <TextBlock Text="一句话简介（列表卡片显示）" Style="{StaticResource FieldLabel}" />
+                        <TextBox x:Name="DescBox" Height="32" ToolTip="例如：1.20.1 生存 + 建筑，服务器长期公益" />
+                        <TextBlock Text="长介绍（详情页显示，支持 markdown：标题 / 粗体 / 列表 / 链接）"
+                                   Style="{StaticResource FieldLabel}" />
+                        <TextBox x:Name="LongBox" Height="90" AcceptsReturn="True" TextWrapping="Wrap"
+                                 VerticalScrollBarVisibility="Auto"
+                                 ToolTip="支持 markdown，也兼容 &lt;b&gt;&lt;i&gt;&lt;u&gt; 这类 HTML 标签" />
+                        <TextBlock Text="玩法标签（逗号分隔，可空）" Style="{StaticResource FieldLabel}" />
+                        <TextBox x:Name="CategoryBox" Height="32" ToolTip="例如：生存,建筑,小游戏" />
+
+                        <CheckBox x:Name="CustomClientBox" Content="需要专属客户端才能进入（请在下面填网盘链接）"
+                                  FontSize="12" Margin="0,12,0,0" Foreground="{DynamicResource TextSecondaryBrush}" />
+                        <TextBlock Text="专属客户端下载链接（可多条；客户端不会上传文件，云盘由服主自己维护）"
+                                   Style="{StaticResource FieldLabel}" />
+                        <Grid Margin="0,0,0,3">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="80" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Grid.Column="0" Text="名称" Style="{StaticResource FieldHint}" />
+                            <TextBlock Grid.Column="1" Text="下载链接" Margin="0,3,6,0" Style="{StaticResource FieldHint}" />
+                            <TextBlock Grid.Column="2" Text="提取码" Style="{StaticResource FieldHint}" />
+                            <TextBlock Grid.Column="3" Text="说明（含 mods/config）" Style="{StaticResource FieldHint}" />
+                        </Grid>
+                        <StackPanel x:Name="DownloadRows" />
+                        <Button Content="+ 添加一条下载链接" Style="{StaticResource LinkButton}"
+                                HorizontalAlignment="Left" Margin="0,4,0,0" Click="OnAddDownloadRow" />
+                    </StackPanel>
+
+                    <TextBlock x:Name="StatusText" FontSize="11" Margin="0,12,0,0" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextMutedBrush}" />
+                </StackPanel>
+            </ScrollViewer>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="18,16,18,16">
+                <Button Content="取消" Style="{StaticResource GhostButton}" Padding="18,6" Margin="0,0,10,0"
+                        Click="OnCancel" />
+                <Button x:Name="SubmitButton" Content="提交" Style="{StaticResource PrimaryButton}" Padding="18,6"
+                        Click="OnSubmit" />
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

@@ -5,11 +5,11 @@
       ① dotnet build -c Release -f net48
       ② 把输出目录里的托管依赖 + 原生 WebView2Loader.dll 压缩成一个 zip 载荷
       ③ 追加到 exe 尾部：[exe][zip][int64 长度][魔数 MCSLPAY1]
-    运行时由 src\McServerList.App\Program.cs 的入口负责从载荷里解析程序集、并把原生 dll 解到
-    %LOCALAPPDATA%\McServerList\native\<版本>。
+    运行时由 src\WorldBirdLauncher.App\Program.cs 的入口负责从载荷里解析程序集、并把原生 dll 解到
+    %LOCALAPPDATA%\WorldBirdLauncher\native\<版本>。
 
     用法：pwsh -File scripts/pack-net48.ps1 [-Out <目录>] [-Lite]
-    产物：<Out>\MCSL.exe；加 -Lite 时是 <Out>\MCSL-Lite.exe
+    产物：<Out>\WBL-Pro.exe；加 -Lite 时是 <Out>\WBL.exe
 #>
 
 param(
@@ -20,8 +20,8 @@ param(
 $ErrorActionPreference = 'Stop'
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$project = Join-Path $repoRoot 'src\McServerList.App\McServerList.App.csproj'
-$bin = Join-Path $repoRoot 'src\McServerList.App\bin\Release\net48'
+$project = Join-Path $repoRoot 'src\WorldBirdLauncher.App\WorldBirdLauncher.App.csproj'
+$bin = Join-Path $repoRoot 'src\WorldBirdLauncher.App\bin\Release\net48'
 if ([string]::IsNullOrWhiteSpace($Out)) {
     $Out = Join-Path $repoRoot 'publish\_staging-net48'
 }
@@ -42,7 +42,7 @@ if ($Lite) { $buildArgs += @('-p:LiteEdition=true') }
 if ($LASTEXITCODE -ne 0) { throw "构建失败，退出码 $LASTEXITCODE" }
 
 # 只嵌入运行时真正需要的东西：跳过 exe 自己、pdb、xml 文档、exe.config（绑定重定向由解析器代替）
-$exeName = if ($Lite) { 'MCSL-Lite.exe' } else { 'MCSL.exe' }
+$exeName = if ($Lite) { 'WBL.exe' } else { 'WBL-Pro.exe' }
 $payloadFiles = Get-ChildItem $bin -File | Where-Object {
     # 两个发行版共用 bin 目录，另一种发行版的 exe 也不能塞进载荷
     $_.Extension -ne '.exe' -and
