@@ -1,0 +1,108 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="..\McServerList.Core\McServerList.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 皮肤展示页用 WebView2 嵌 skinview3d 做可旋转 3D -->
+    <PackageReference Include="Microsoft.Web.WebView2" Version="1.0.2903.40" />
+    <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'net48'">
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+    <!-- net48 没有 System.Net.Http.Json（ReadFromJsonAsync 等扩展） -->
+    <PackageReference Include="System.Net.Http.Json" Version="8.0.1" />
+    <!-- net48 上这几个类型在框架程序集里，必须显式引用 -->
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.IO.Compression" />
+    <Reference Include="System.IO.Compression.FileSystem" />
+  </ItemGroup>
+
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net48'">
+    <!-- 单文件版用自己的入口：先注册 AssemblyResolve（从 exe 尾部的载荷加载依赖）再进 WPF -->
+    <StartupObject>McServerList.App.Program</StartupObject>
+    <!--
+      x64 固定：WebView2 的原生 WebView2Loader.dll 必须和进程位数一致。
+      AnyCPU/未指定时 NuGet 会把 x86 版 loader 复制到输出目录，运行时报
+      BadImageFormatException（0x8007000B「试图加载格式不正确的程序」——实测踩过）。
+    -->
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      窗口图标（MainWindow 的 Icon="Assets/app.ico"）必须作为 **Resource** 打进程序集；
+      只写 <ApplicationIcon> 的话只有 exe 文件图标生效，XAML 会在启动时报
+      "找不到资源 assets/app.ico" —— 实测直接起不来（WPF 的 .ico 不会自动当 Resource）。
+    -->
+    <Resource Include="Assets\app.ico" />
+    <!-- skinview3d 打包进程序集：国内环境下 jsDelivr 等 CDN 常被墙，不能依赖在线脚本 -->
+    <EmbeddedResource Include="Assets\skinview3d.bundle.js" />
+    <None Include="Assets\skinview3d.LICENSE.txt" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- 双目标：net8.0-windows 是现有正式版；net48 是"小体积单 exe"那条路 -->
+    <TargetFrameworks>net8.0-windows;net48</TargetFrameworks>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+    <!-- net48 的默认语言版本是 C# 7.3，这里显式用最新 -->
+    <LangVersion>latest</LangVersion>
+    <AutomaticallyUseReferenceAssemblyPackages>true</AutomaticallyUseReferenceAssemblyPackages>
+    <!-- 托盘图标用 System.Windows.Forms.NotifyIcon（无需第三方依赖） -->
+    <UseWindowsForms>true</UseWindowsForms>
+    <!--
+      程序名用缩写 MCSL（用户 2026-10-08）：exe 文件名、程序集名、文件属性都叫 MCSL。
+      ★ 改名会牵动 InternalsVisibleTo（Core/Shared 里的）与 scripts\*.ps1，别只改这一处。
+    -->
+    <AssemblyName>MCSL</AssemblyName>
+    <RootNamespace>McServerList.App</RootNamespace>
+    <Product>MCSL</Product>
+    <AssemblyTitle>MCSL</AssemblyTitle>
+    <FileDescription>MCSL · 我的世界服务器列表</FileDescription>
+    <!-- exe 图标：与窗口左上角那个"蓝底白镐"一致（资源管理器 / 任务栏 / 文件属性都显示） -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <Version>0.1.0</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- 本程序是 WPF，DPI 感知写在 app.manifest 里是正确的；WFAC010 是启用 WinForms 后的误报 -->
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
+  </PropertyGroup>
+
+  <!--
+    阉割版（2026-10-20 用户确认）：同一套代码，LiteEdition=true 时编译进 LITE 常量并改程序名。
+    完整版不受影响（不传这个属性时与之前完全一致）。
+  -->
+  <PropertyGroup Condition="'$(LiteEdition)' == 'true'">
+    <DefineConstants>$(DefineConstants);LITE</DefineConstants>
+    <AssemblyName>MCSL-Lite</AssemblyName>
+    <Product>MCSL Lite</Product>
+    <AssemblyTitle>MCSL Lite</AssemblyTitle>
+    <FileDescription>MCSL Lite · 我的世界服务器列表</FileDescription>
+  </PropertyGroup>
+
+  <!-- 发布为自包含单文件：用户无需安装 .NET 运行时 -->
+  <!-- 只对 net8.0-windows 生效：net48 没有自包含/单文件发布（那条路是阶段 3 自研的打包） -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(TargetFramework)' == 'net8.0-windows'">
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <SelfContained>true</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <DebugType>none</DebugType>
+  </PropertyGroup>
+
+  <!-- WPF SDK 的隐式 using 集合不含 System.IO，这里补回 -->
+  <ItemGroup>
+    <Using Include="System.IO" />
+    <!-- 兼容层的全局 using：net48 上缺的那批新 API 都在 Compat\NetCompat 里 -->
+    <Using Include="McServerList.Core.Compat" />
+    <!-- 开 WinForms 只是为了 NotifyIcon；去掉它的隐式 using，避免与 WPF 的 Application / UserControl / MessageBox 重名 -->
+    <Using Remove="System.Windows.Forms" />
+    <Using Remove="System.Drawing" />
+  </ItemGroup>
+
+</Project>

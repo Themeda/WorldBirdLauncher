@@ -1,0 +1,65 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    平台无关的共享代码：客户端（WPF）与服务端（ASP.NET Core）共用。
+
+    注意：文件里的命名空间**故意保持 McServerList.Core.***（没有改成 McServerList.Shared），
+    这样客户端所有既有 using 都不用动，这次抽取对客户端是零改动的纯搬运。
+    因此这里也不引用 WPF / StarLight（那些留在 McServerList.Core 里），目标框架是普通的 net8.0，
+    服务端才能跑在 Linux/Docker 上。
+  -->
+  <PropertyGroup>
+    <!-- 双目标：net8.0 给服务端与 .NET 8 客户端；netstandard2.0 给 net48 客户端 -->
+    <TargetFrameworks>netstandard2.0;net8.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- netstandard2.0 的默认语言版本是 C# 7.3，这里显式用最新（记录/集合表达式/required 等都要） -->
+    <LangVersion>latest</LangVersion>
+    <AssemblyName>McServerList.Shared</AssemblyName>
+    <RootNamespace>McServerList.Shared</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- SRV 解析（ServerStatusProvider 用） -->
+    <PackageReference Include="DnsClient" Version="1.8.0" />
+    <!--
+      netstandard2.0 没有 System.Text.Json；net48 也没有 Span/Index/Range/record-init/required，
+      靠 PolySharp 生成这些 polyfill（含 System.Index/Range、IsExternalInit、RequiredMemberAttribute …），
+      这样同一份源码既能编 net8.0 也能编 netstandard2.0。
+    -->
+    <PackageReference Include="PolySharp" Version="1.15.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
+    <PackageReference Include="System.Text.Json" Version="9.0.0" />
+    <PackageReference Include="System.Memory" Version="4.5.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Using Include="System.IO" />
+    <!-- 兼容层的全局 using（net48 上那批新 API 的等价实现） -->
+    <Using Include="McServerList.Core.Compat" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- 客户端（Core/App）也要用 Compat\NetCompat 里的那批兼容实现 -->
+    <InternalsVisibleTo Include="McServerList.Core" />
+    <!-- 注意：App 的程序集名是 MCSL（不是 McServerList.App），IVT 必须写程序集名 -->
+    <InternalsVisibleTo Include="MCSL" />
+    <!-- 阉割版（LiteEdition=true）的程序集名，见 McServerList.App.csproj -->
+    <InternalsVisibleTo Include="MCSL-Lite" />
+    <InternalsVisibleTo Include="McServerList.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!--
+      游戏提示文案：服务端下发给客户端，客户端也留一份做兜底。
+
+      注意：servers.json（359 条目录数据，约 1 MB）**已移走**（2026-10-08 M1.5）——
+      它是服务端的种子数据，内嵌在 Shared 里会让每份客户端 exe 白带约 1 MB，
+      现在内嵌到 McServerList.Server（由服务端把自己的程序集传给 ServerCatalog）。
+    -->
+    <EmbeddedResource Include="Data\tips.json" />
+  </ItemGroup>
+
+</Project>

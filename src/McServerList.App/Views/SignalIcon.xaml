@@ -1,0 +1,21 @@
+<UserControl x:Class="McServerList.App.Views.SignalIcon"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Width="26" Height="16" SnapsToDevicePixels="True">
+    <!-- 三格信号：良好=3 格、一般=2 格、较差=1 格、离线/待采样=0 格；离线时左下角加红色叉。
+         注意每个格子都要 VerticalAlignment="Bottom"——否则三格的底部不在同一条水平线上（顶端对齐）。 -->
+    <Grid>
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Bottom" HorizontalAlignment="Center">
+            <Rectangle x:Name="Bar1" Width="5" Height="7" RadiusX="1" RadiusY="1" Margin="0,0,2,0"
+                       VerticalAlignment="Bottom" />
+            <Rectangle x:Name="Bar2" Width="5" Height="11" RadiusX="1" RadiusY="1" Margin="0,0,2,0"
+                       VerticalAlignment="Bottom" />
+            <Rectangle x:Name="Bar3" Width="5" Height="16" RadiusX="1" RadiusY="1"
+                       VerticalAlignment="Bottom" />
+        </StackPanel>
+        <Path x:Name="OfflineCross" Visibility="Collapsed" StrokeThickness="2.2" StrokeStartLineCap="Round"
+              StrokeEndLineCap="Round" Stroke="#E24A3B"
+              HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="-3,0,0,-3"
+              Data="M0,0 L7,7 M7,0 L0,7" />
+    </Grid>
+</UserControl>
