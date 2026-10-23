@@ -1,9 +1,7 @@
 # MCSL
 
 MCSL（Minecraft Server List Launcher）是一个面向 Windows 10/11 的 Minecraft 服务器列表与启动器客户端。
-仓库内容为 **2026-10-24 的 MCSL Lite 客户端源码快照**，使用 MIT License。
-
-> 这是一个一次性发布的快照仓库。后续客户端开发、修复和新功能只会保留在私有主库中，不会同步到本仓库；本仓库发布后不再更新。
+仓库内容为 **2026-10-24 的 MCSL 客户端源码快照**，使用 MIT License。
 
 ## 当前客户端能力
 
@@ -15,8 +13,6 @@ MCSL（Minecraft Server List Launcher）是一个面向 Windows 10/11 的 Minecr
 - 支持 Fabric、Quilt、Forge、NeoForge 与 OptiFine 安装。
 - 支持整合包导入、模组搜索与下载，以及资源下载队列。
 - 支持浅色、深色、跟随系统主题和多账号管理。
-
-本快照不包含服务端、官网、部署配置、服务器目录数据或私有运维资料。
 
 ## 环境要求
 
@@ -46,8 +42,6 @@ dotnet build src\McServerList.App\McServerList.App.csproj -p:LiteEdition=true
 ```powershell
 dotnet test tests\McServerList.Core.Tests\McServerList.Core.Tests.csproj
 ```
-
-公开快照不包含服务端的 `servers.json`，因此依赖服务端种子目录的目录数据测试不包含在快照中。
 
 ## 生成 net48 单文件
 
