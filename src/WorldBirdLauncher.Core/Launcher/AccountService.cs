@@ -7,8 +7,7 @@ namespace WorldBirdLauncher.Core.Launcher;
 /// <summary>
 /// 账户登录与本地保存。
 ///
-/// 登录能力**全部自研**：离线（官方离线 UUID 规则）、外置 Yggdrasil（<see cref="YggdrasilAuth"/>）、
-/// 统一通行证（<see cref="UnifiedPassAuth"/>）；微软登录尚未开放（需要 Azure ClientId）。
+/// 登录能力**全部自研**：微软登录、外置 Yggdrasil（<see cref="YggdrasilAuth"/>）、统一通行证（<see cref="UnifiedPassAuth"/>）。
 /// 本地存储使用 Windows DPAPI（当前用户作用域）加密，避免明文落盘。
 /// </summary>
 public sealed class AccountService
