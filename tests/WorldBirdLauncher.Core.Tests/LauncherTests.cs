@@ -83,7 +83,7 @@ public class GameLaunchServiceTests
 
 public class ModpackInstallerTests : IDisposable
 {
-    private readonly string _directory = Path.Combine(Path.GetTempPath(), "mcsl-tests-" + Guid.NewGuid().ToString("N"));
+    private readonly string _directory = Path.Combine(Path.GetTempPath(), "wbl-tests-" + Guid.NewGuid().ToString("N"));
 
     public ModpackInstallerTests() => Directory.CreateDirectory(_directory);
 
@@ -255,7 +255,7 @@ public class JavaRequirementTests
     [Fact]
     public void 版本JSON缺失时回退到启发式规则()
     {
-        var root = Path.Combine(Path.GetTempPath(), "mcsl-java-" + Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(Path.GetTempPath(), "wbl-java-" + Guid.NewGuid().ToString("N"));
         try
         {
             // 没有版本 JSON（例如目录被删）时不应抛异常，退回旧的启发式判断
@@ -275,7 +275,7 @@ public class JavaRequirementTests
     [Fact]
     public void 沿inheritsFrom向上追溯Java声明()
     {
-        var root = Path.Combine(Path.GetTempPath(), "mcsl-java-" + Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(Path.GetTempPath(), "wbl-java-" + Guid.NewGuid().ToString("N"));
         try
         {
             WriteVersion(root, "26.1", """{ "id": "26.1", "javaVersion": { "majorVersion": 25 } }""");

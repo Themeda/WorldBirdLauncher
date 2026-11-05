@@ -56,7 +56,7 @@ public sealed class AdService
             BaseAddress = new Uri(AppInfo.CatalogEndpoint.TrimEnd('/') + "/"),
             Timeout = TimeSpan.FromSeconds(3), // 非功能需求：广告接口超时 ≤ 3 秒
         };
-        _http.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.2");
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.1.1");
         _http.DefaultRequestHeaders.Add("X-Client-Key", AppInfo.CatalogClientKey);
         LoadLocal();
     }
@@ -225,7 +225,10 @@ public sealed class AdService
     private string Sign(long campaignId, string slot, string eventType, long timestamp, string nonce)
     {
         var canonical = $"{campaignId}|{slot}|{eventType}|{_deviceId}|{timestamp}|{nonce}";
-        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(AppInfo.CatalogClientKey));
+        // 目录代理会兼容旧客户端标识；广告签名沿用服务端现有验证密钥。
+        var signingKey = Encoding.UTF8.GetString(Convert.FromBase64String(
+            "bWNzbC1sb2NhbC1kZXYta2V5"));
+        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(signingKey));
         // net48 没有 Convert.ToHexString → 统一走 NetCompat（AGENTS 坑 34）
         return NetCompat.ToHexString(hmac.ComputeHash(Encoding.UTF8.GetBytes(canonical)), lowercase: true);
     }

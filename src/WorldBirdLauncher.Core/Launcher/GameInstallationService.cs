@@ -22,7 +22,7 @@ public sealed class GameInstallationService
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         // 部分镜像（BMCLAPI）会对没有 User-Agent 的请求返回 403
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.1 (github.com/Themeda/WorldBirdLauncher)");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.1.1 (github.com/Themeda/WorldBirdLauncher)");
         return client;
     }
 

@@ -62,7 +62,7 @@
     <FileDescription>WorldBirdLauncher-Pro · 我的世界服务器列表</FileDescription>
     <!-- exe 图标：与窗口左上角那个"蓝底白镐"一致（资源管理器 / 任务栏 / 文件属性都显示） -->
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Version>0.1.0</Version>
+    <Version>0.1.1</Version>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- 本程序是 WPF，DPI 感知写在 app.manifest 里是正确的；WFAC010 是启用 WinForms 后的误报 -->
     <NoWarn>$(NoWarn);WFAC010</NoWarn>

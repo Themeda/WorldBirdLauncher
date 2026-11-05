@@ -4,7 +4,7 @@
     net48 没有 .NET 8 那样的自包含单文件发布，所以这里自研：
       ① dotnet build -c Release -f net48
       ② 把输出目录里的托管依赖 + 原生 WebView2Loader.dll 压缩成一个 zip 载荷
-      ③ 追加到 exe 尾部：[exe][zip][int64 长度][魔数 MCSLPAY1]
+      ③ 追加到 exe 尾部：[exe][zip][int64 长度][魔数 WBLPAY01]
     运行时由 src\WorldBirdLauncher.App\Program.cs 的入口负责从载荷里解析程序集、并把原生 dll 解到
     %LOCALAPPDATA%\WorldBirdLauncher\native\<版本>。
 
@@ -52,7 +52,7 @@ $payloadFiles = Get-ChildItem $bin -File | Where-Object {
 if (-not $payloadFiles) { throw "输出目录里没有可嵌入的依赖：$bin" }
 
 Write-Host ('② 打包载荷（' + $payloadFiles.Count + ' 个文件）…') -ForegroundColor Cyan
-$zipPath = Join-Path ([System.IO.Path]::GetTempPath()) ('mcsl-payload-' + [Guid]::NewGuid().ToString('N') + '.zip')
+$zipPath = Join-Path ([System.IO.Path]::GetTempPath()) ('wbl-payload-' + [Guid]::NewGuid().ToString('N') + '.zip')
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 if (Test-Path $zipPath) { Remove-Item -LiteralPath $zipPath -Force }
 [System.IO.Compression.ZipFile]::CreateFromDirectory(
@@ -68,7 +68,7 @@ $output.Write($exeBytes, 0, $exeBytes.Length)
 $output.Write($zipBytes, 0, $zipBytes.Length)
 $lengthBytes = [System.BitConverter]::GetBytes([int64]$zipBytes.Length)
 $output.Write($lengthBytes, 0, $lengthBytes.Length)
-$magicBytes = [System.Text.Encoding]::ASCII.GetBytes('MCSLPAY1')
+$magicBytes = [System.Text.Encoding]::ASCII.GetBytes('WBLPAY01')
 $output.Write($magicBytes, 0, $magicBytes.Length)
 
 New-Item -ItemType Directory -Force -Path $Out | Out-Null

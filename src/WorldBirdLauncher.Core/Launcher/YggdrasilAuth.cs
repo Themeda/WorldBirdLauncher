@@ -21,7 +21,7 @@ public static class YggdrasilAuth
     private static HttpClient CreateClient()
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.1 (github.com/Themeda/WorldBirdLauncher)");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.1.1 (github.com/Themeda/WorldBirdLauncher)");
         return client;
     }
 

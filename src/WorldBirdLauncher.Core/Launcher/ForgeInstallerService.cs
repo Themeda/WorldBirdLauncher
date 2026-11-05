@@ -392,7 +392,7 @@ public sealed class ForgeInstallerService
     {
         // data 表：`[maven 坐标]`、`'字面量'`、其它＝安装包内的文件（解到临时目录）
         var data = new Dictionary<string, string>(StringComparer.Ordinal);
-        var tempDirectory = Path.Combine(Path.GetTempPath(), "mcsl-forge-" + Guid.NewGuid().ToString("N"));
+        var tempDirectory = Path.Combine(Path.GetTempPath(), "wbl-forge-" + Guid.NewGuid().ToString("N"));
         try
         {
             if (profile.TryGetProperty("data", out var dataNode) && dataNode.ValueKind == JsonValueKind.Object)

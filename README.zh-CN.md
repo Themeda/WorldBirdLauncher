@@ -3,7 +3,7 @@
 # WorldBirdLauncher
 
 WorldBirdLauncher（WBL）是一个面向 Windows 10/11 的 Minecraft 服务器列表与启动器客户端。
-仓库内容为 **2026-10-24 的 WorldBirdLauncher 客户端源码快照**，使用 MIT License。
+仓库内容为 **2026-11-05 的 WorldBirdLauncher 客户端源码快照**，使用 MIT License。
 
 ## 当前客户端能力
 
@@ -11,6 +11,7 @@ WorldBirdLauncher（WBL）是一个面向 Windows 10/11 的 Minecraft 服务器�
 - 显示服务器状态、MOTD、线路、加载器、版本与收录信息。
 - 支持本机延迟测试、收藏、历史记录和服务器详情大图。
 - 支持微软正版、外置 Yggdrasil、统一通行证登录；当前公开版本不提供离线登录。
+- 微软登录使用系统浏览器、授权代码流、PKCE 和临时回环端口回调。
 - 支持 Java 检测、版本隔离、完整性检查、游戏启动和直连进服。
 - 支持 Fabric、Quilt、Forge、NeoForge 与 OptiFine 安装。
 - 支持整合包导入、模组搜索与下载，以及资源下载队列。
@@ -22,6 +23,8 @@ WorldBirdLauncher（WBL）是一个面向 Windows 10/11 的 Minecraft 服务器�
 - .NET SDK 8.0。
 - Visual Studio 2022（可选，使用 WPF 工作负载时体验更完整）。
 - 运行 3D 皮肤页需要 Microsoft Edge WebView2 Runtime。
+- 微软应用注册需在“移动和桌面应用程序”平台添加重定向 URI
+  `http://localhost/callback`；微软会忽略 localhost 回环地址的动态端口。
 
 客户端同时面向 `net8.0-windows` 和 `net48`。正式发布路径为自研的 net48 单文件打包。
 

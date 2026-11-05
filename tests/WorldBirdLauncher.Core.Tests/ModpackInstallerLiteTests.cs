@@ -25,7 +25,7 @@ public class ModpackInstallerLiteTests
         try
         {
             var result = await new ModpackInstaller(new GameInstallationService()).InstallAsync(
-                archive, Path.Combine(Path.GetTempPath(), "mcsl-lite-test-" + Guid.NewGuid().ToString("N")),
+                archive, Path.Combine(Path.GetTempPath(), "wbl-lite-test-" + Guid.NewGuid().ToString("N")),
                 allowVersionDownload: false);
 
             Assert.False(result.Success);
@@ -49,7 +49,7 @@ public class ModpackInstallerLiteTests
         try
         {
             var result = await new ModpackInstaller(new GameInstallationService()).InstallAsync(
-                archive, Path.Combine(Path.GetTempPath(), "mcsl-lite-test-" + Guid.NewGuid().ToString("N")),
+                archive, Path.Combine(Path.GetTempPath(), "wbl-lite-test-" + Guid.NewGuid().ToString("N")),
                 allowVersionDownload: false);
 
             Assert.False(result.Success);
@@ -63,7 +63,7 @@ public class ModpackInstallerLiteTests
 
     private static string CreateZip(IReadOnlyDictionary<string, string> files)
     {
-        var path = Path.Combine(Path.GetTempPath(), "mcsl-lite-pack-" + Guid.NewGuid().ToString("N") + ".zip");
+        var path = Path.Combine(Path.GetTempPath(), "wbl-lite-pack-" + Guid.NewGuid().ToString("N") + ".zip");
         using var archive = ZipFile.Open(path, ZipArchiveMode.Create);
         foreach (var pair in files)
         {

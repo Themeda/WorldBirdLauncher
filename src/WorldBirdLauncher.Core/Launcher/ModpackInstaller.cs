@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Net.Http;
+using System.Text;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -103,7 +104,7 @@ public sealed class ModpackInstaller
         }
 
         // ★ 整合包实例目录名：默认用整合包名。不能覆盖"不是我们建的"版本目录（同名版本/加载器已存在时换个名字）。
-        var id = mcsl_MakeInstanceIdUnique(gameRoot, string.IsNullOrWhiteSpace(instanceId) ? SanitizeId(info.Name) : instanceId!);
+        var id = wbl_MakeInstanceIdUnique(gameRoot, string.IsNullOrWhiteSpace(instanceId) ? SanitizeId(info.Name) : instanceId!);
         var mcVersion = info.MinecraftVersion!;
 
         var loaderVersionId = mcVersion;
@@ -149,7 +150,7 @@ public sealed class ModpackInstaller
         var launchVersionId = loaderVersionId;
         if (!string.Equals(id, loaderVersionId, StringComparison.OrdinalIgnoreCase))
         {
-            mcsl_WriteInstanceJson(targetDirectory, id, loaderVersionId);
+            wbl_WriteInstanceJson(targetDirectory, id, loaderVersionId);
 
             // 模块化加载器（Forge 1.17+ / NeoForge）的 jvm 参数里有 -DignoreList=client-extra,${version_name}.jar，
             // 是**按文件名**把"客户端 jar"排除在模块层之外的；整合包实例的 version_name 是实例名，
@@ -487,14 +488,14 @@ public sealed class ModpackInstaller
     /// 为整合包实例写一份可启动的版本 JSON：只声明 id 与 inheritsFrom，
     /// 其余（libraries / arguments / mainClass / 客户端 jar）都沿父版本继承。
     /// </summary>
-    private static void mcsl_WriteInstanceJson(string directory, string instanceId, string parentId)
+    private static void wbl_WriteInstanceJson(string directory, string instanceId, string parentId)
     {
         var payload = new Dictionary<string, object?>
         {
             ["id"] = instanceId,
             ["inheritsFrom"] = parentId,
             ["type"] = "release",
-            ["mcslModpack"] = true,
+            ["wblModpack"] = true,
         };
 
         var json = JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true });
@@ -502,9 +503,9 @@ public sealed class ModpackInstaller
     }
 
     /// <summary>
-    /// 目标实例名被占用时换一个名字；如果那个目录是我们之前为整合包建的（JSON 里有 mcslModpack 标记），就复用。
+    /// 目标实例名被占用时换一个名字；如果那个目录是我们之前为整合包建的，就复用。
     /// </summary>
-    private static string mcsl_MakeInstanceIdUnique(string gameRoot, string baseId)
+    private static string wbl_MakeInstanceIdUnique(string gameRoot, string baseId)
     {
         var candidate = baseId;
         for (var attempt = 0; attempt < 50; attempt++)
@@ -518,7 +519,15 @@ public sealed class ModpackInstaller
             try
             {
                 using var document = JsonDocument.Parse(File.ReadAllText(jsonPath));
-                if (document.RootElement.TryGetProperty("mcslModpack", out var flag) && flag.ValueKind == JsonValueKind.True)
+                var isWblModpack =
+                    document.RootElement.TryGetProperty("wblModpack", out var flag) &&
+                    flag.ValueKind == JsonValueKind.True;
+                var legacyMarker = Encoding.UTF8.GetString(Convert.FromBase64String(
+                    "bWNzbE1vZHBhY2s="));
+                var isLegacyModpack =
+                    document.RootElement.TryGetProperty(legacyMarker, out var legacyFlag) &&
+                    legacyFlag.ValueKind == JsonValueKind.True;
+                if (isWblModpack || isLegacyModpack)
                 {
                     return candidate; // 上次导入这个整合包建的就是它
                 }

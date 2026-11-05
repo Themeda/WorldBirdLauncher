@@ -1,11 +1,15 @@
+using System.Net;
 using System.Net.Http;
+using System.Net.Sockets;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
 namespace WorldBirdLauncher.Core.Launcher;
 
 /// <summary>
-/// 微软正版登录：设备代码流 → Xbox Live → XSTS → Minecraft 服务 → 正版档案。
+/// 微软正版登录：授权代码流 + PKCE + 回环重定向 → Xbox Live → XSTS →
+/// Minecraft 服务 → 正版档案。
 ///
 /// 2026-10-20 用户确认：阉割版只保留「正版 / 外置 / 统一通行证」三种登录，
 /// 所以把原先只在探针脚本里跑通的链路正式接进客户端。
@@ -20,8 +24,10 @@ public static class MicrosoftAuth
     public const string ClientId = "3f799499-d783-4ca5-939c-f9aad81fdc46";
 
     private const string Scope = "XboxLive.signin offline_access";
-    private const string DeviceCodeUrl = "https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode";
+    private const string AuthorizeUrl = "https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize";
     private const string TokenUrl = "https://login.microsoftonline.com/consumers/oauth2/v2.0/token";
+    private const string CallbackPath = "/callback";
+    private const int MaximumCallbackBytes = 16 * 1024;
     private const string XblUrl = "https://user.auth.xboxlive.com/user/authenticate";
     private const string XstsUrl = "https://xsts.auth.xboxlive.com/xsts/authorize";
     private const string McLoginUrl = "https://api.minecraftservices.com/authentication/login_with_xbox";
@@ -33,121 +39,395 @@ public static class MicrosoftAuth
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd(
-            "WorldBirdLauncher/0.1 (+https://github.com/Themeda/WorldBirdLauncher)");
+            "WorldBirdLauncher/0.1.1 (+https://github.com/Themeda/WorldBirdLauncher)");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
         return client;
     }
 
-    /// <summary>设备代码流返回给用户看的信息。</summary>
-    public sealed record DeviceCode(
-        string DeviceCodeValue,
-        string UserCode,
-        string VerificationUri,
-        int ExpiresInSeconds,
-        int IntervalSeconds);
-
     /// <summary>微软 OAuth token（refresh_token 用于下次免授权续期）。</summary>
     public sealed record MicrosoftToken(string AccessToken, string? RefreshToken, int ExpiresInSeconds);
 
-    /// <summary>申请一次设备代码（用户在浏览器里输 code 授权）。</summary>
-    public static async Task<DeviceCode> StartDeviceCodeAsync(CancellationToken cancellationToken = default)
+    /// <summary>
+    /// 启动一次性回环监听并生成授权 URL。随机端口由系统分配，state 与 code_verifier
+    /// 只保存在当前对象的私有字段中。
+    /// </summary>
+    public static AuthorizationSession StartAuthorizationCode() =>
+        StartAuthorizationCode(Http, TokenUrl);
+
+    internal static AuthorizationSession StartAuthorizationCode(
+        HttpClient httpClient,
+        string tokenEndpoint)
     {
-        using var content = new FormUrlEncodedContent(new Dictionary<string, string>
+        var verifier = Base64Url(RandomBytes(32));
+        var state = Base64Url(RandomBytes(32));
+        var challenge = CreatePkceChallenge(verifier);
+        var listeners = StartLoopbackListeners(out var port);
+        var redirectUri = $"http://localhost:{port}{CallbackPath}";
+        var query = string.Join("&", new Dictionary<string, string>
         {
             ["client_id"] = ClientId,
+            ["response_type"] = "code",
+            ["redirect_uri"] = redirectUri,
             ["scope"] = Scope,
-        });
-        using var response = await Http.PostAsync(DeviceCodeUrl, content, cancellationToken).ConfigureAwait(false);
-        var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        if (!response.IsSuccessStatusCode)
-        {
-            throw new MicrosoftAuthException(
-                "申请微软登录代码失败：" + ExtractOAuthError(body));
-        }
-
-        using var document = TryParse(body) ??
-                             throw new MicrosoftAuthException("微软返回的设备代码不是合法 JSON，请稍后重试。");
-        var root = document.RootElement;
-        var deviceCode = GetString(root, "device_code");
-        var userCode = GetString(root, "user_code");
-        var uri = GetString(root, "verification_uri");
-        if (string.IsNullOrWhiteSpace(deviceCode) || string.IsNullOrWhiteSpace(userCode) ||
-            string.IsNullOrWhiteSpace(uri))
-        {
-            throw new MicrosoftAuthException("微软没有返回有效的设备代码，请稍后重试。");
-        }
-
-        return new DeviceCode(
-            deviceCode!,
-            userCode!,
-            uri!,
-            GetInt(root, "expires_in", 900),
-            Math.Max(2, GetInt(root, "interval", 5)));
+            ["code_challenge"] = challenge,
+            ["code_challenge_method"] = "S256",
+            ["state"] = state,
+        }.Select(item =>
+            Uri.EscapeDataString(item.Key) + "=" + Uri.EscapeDataString(item.Value)));
+        return new AuthorizationSession(
+            new Uri(AuthorizeUrl + "?" + query),
+            new Uri(redirectUri),
+            state,
+            verifier,
+            listeners,
+            httpClient,
+            tokenEndpoint);
     }
 
-    /// <summary>
-    /// 轮询直到用户完成授权。取消令牌用于用户关窗 / 取消登录。
-    /// <paramref name="status"/> 会收到"等待授权 / 网络稍慢"等进度文字。
-    /// </summary>
-    public static async Task<MicrosoftToken> PollForTokenAsync(
-        DeviceCode device,
-        IProgress<string>? status = null,
-        CancellationToken cancellationToken = default)
+    public sealed class AuthorizationSession : IDisposable
     {
-        var interval = Math.Max(2, device.IntervalSeconds);
-        var deadline = DateTimeOffset.Now.AddSeconds(Math.Max(60, device.ExpiresInSeconds));
-        var pendingCount = 0;
-        while (DateTimeOffset.Now < deadline)
+        private readonly Uri _redirectUri;
+        private readonly string _state;
+        private readonly string _verifier;
+        private readonly List<TcpListener> _listeners;
+        private readonly HttpClient _httpClient;
+        private readonly string _tokenEndpoint;
+        private int _started;
+        private int _disposed;
+
+        internal AuthorizationSession(
+            Uri authorizationUri,
+            Uri redirectUri,
+            string state,
+            string verifier,
+            List<TcpListener> listeners,
+            HttpClient httpClient,
+            string tokenEndpoint)
         {
-            await Task.Delay(TimeSpan.FromSeconds(interval), cancellationToken).ConfigureAwait(false);
+            AuthorizationUri = authorizationUri;
+            _redirectUri = redirectUri;
+            _state = state;
+            _verifier = verifier;
+            _listeners = listeners;
+            _httpClient = httpClient;
+            _tokenEndpoint = tokenEndpoint;
+        }
+
+        public Uri AuthorizationUri { get; }
+
+        public Uri RedirectUri => _redirectUri;
+
+        public async Task<MicrosoftToken> WaitForTokenAsync(
+            IProgress<string>? status = null,
+            CancellationToken cancellationToken = default)
+        {
+            if (Interlocked.Exchange(ref _started, 1) != 0)
+            {
+                throw new InvalidOperationException("本次微软授权回调已经处理。");
+            }
+            if (Volatile.Read(ref _disposed) != 0)
+            {
+                throw new ObjectDisposedException(nameof(AuthorizationSession));
+            }
+
+            status?.Report("等待浏览器完成微软授权…");
+            var callback = await ReceiveCallbackAsync(cancellationToken).ConfigureAwait(false);
+            if (!FixedTimeEquals(callback.State, _state))
+            {
+                throw new MicrosoftAuthException(
+                    "微软授权回调 state 校验失败。请关闭其他网页后重新开始登录，并且只保留微软授权页面。");
+            }
+            if (!string.IsNullOrWhiteSpace(callback.Error))
+            {
+                var detail = string.IsNullOrWhiteSpace(callback.ErrorDescription)
+                    ? callback.Error
+                    : callback.Error + "：" + callback.ErrorDescription;
+                throw new MicrosoftAuthException("微软授权失败：" + detail);
+            }
+            if (string.IsNullOrWhiteSpace(callback.Code))
+            {
+                throw new MicrosoftAuthException("微软授权回调缺少 code，请重新登录。");
+            }
+
+            status?.Report("浏览器授权完成，正在交换微软令牌…");
             using var content = new FormUrlEncodedContent(new Dictionary<string, string>
             {
                 ["client_id"] = ClientId,
-                ["grant_type"] = "urn:ietf:params:oauth:grant-type:device_code",
-                ["device_code"] = device.DeviceCodeValue,
+                ["grant_type"] = "authorization_code",
+                ["code"] = callback.Code!,
+                ["redirect_uri"] = _redirectUri.AbsoluteUri,
+                ["code_verifier"] = _verifier,
+                ["scope"] = Scope,
             });
-            using var response = await Http.PostAsync(TokenUrl, content, cancellationToken).ConfigureAwait(false);
+            using var response = await _httpClient.PostAsync(
+                _tokenEndpoint,
+                content,
+                cancellationToken).ConfigureAwait(false);
             var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
             using var document = TryParse(body) ??
-                                 throw new MicrosoftAuthException("微软授权响应不是合法 JSON，请稍后重试。");
+                                 throw new MicrosoftAuthException("微软令牌响应不是合法 JSON，请稍后重试。");
             var root = document.RootElement;
             var accessToken = GetString(root, "access_token");
-            if (!string.IsNullOrWhiteSpace(accessToken))
+            if (!response.IsSuccessStatusCode || string.IsNullOrWhiteSpace(accessToken))
             {
-                return new MicrosoftToken(
-                    accessToken!,
-                    GetString(root, "refresh_token"),
-                    GetInt(root, "expires_in", 3600));
+                throw new MicrosoftAuthException(
+                    "微软令牌交换失败：" + ExtractOAuthError(body));
             }
 
-            var error = GetString(root, "error") ?? string.Empty;
-            switch (error)
+            return new MicrosoftToken(
+                accessToken!,
+                GetString(root, "refresh_token"),
+                GetInt(root, "expires_in", 3600));
+        }
+
+        public void Dispose()
+        {
+            if (Interlocked.Exchange(ref _disposed, 1) == 0)
             {
-                case "authorization_pending":
-                    pendingCount++;
-                    status?.Report(pendingCount % 6 == 0
-                        ? "还在等你完成授权…（浏览器里输入代码并点「继续」）"
-                        : "等待微软授权中…");
-                    continue;
-
-                case "slow_down":
-                    interval = Math.Min(15, interval + 5);
-                    status?.Report("授权服务器要求放慢轮询，继续等待…");
-                    continue;
-
-                case "authorization_declined":
-                    throw new MicrosoftAuthException("你在微软页面上拒绝了本次授权。");
-
-                case "expired_token":
-                    throw new MicrosoftAuthException("设备代码已过期，请点「重新获取代码」再试。");
-
-                default:
-                    throw new MicrosoftAuthException(
-                        "微软授权失败：" + (GetString(root, "error_description") ?? error));
+                StopListeners();
             }
         }
 
-        throw new MicrosoftAuthException("等待授权超时（设备代码已过期），请重新获取代码。");
+        private void StopListeners()
+        {
+            foreach (var listener in _listeners)
+            {
+                try
+                {
+                    listener.Stop();
+                }
+                catch
+                {
+                }
+            }
+        }
+
+        private async Task<CallbackResult> ReceiveCallbackAsync(
+            CancellationToken cancellationToken)
+        {
+            var accepts = _listeners
+                .Select(listener => listener.AcceptTcpClientAsync())
+                .ToArray();
+            using var registration = cancellationToken.Register(StopListeners);
+            TcpClient client;
+            try
+            {
+                var completed = await Task.WhenAny(accepts).ConfigureAwait(false);
+                foreach (var pending in accepts.Where(task => !ReferenceEquals(task, completed)))
+                {
+                    _ = pending.ContinueWith(
+                        task => _ = task.Exception,
+                        CancellationToken.None,
+                        TaskContinuationOptions.ExecuteSynchronously,
+                        TaskScheduler.Default);
+                }
+                client = await completed.ConfigureAwait(false);
+            }
+            catch (ObjectDisposedException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
+            catch (SocketException) when (cancellationToken.IsCancellationRequested)
+            {
+                throw new OperationCanceledException(cancellationToken);
+            }
+            finally
+            {
+                StopListeners();
+            }
+
+            using (client)
+            using (var interrupt = cancellationToken.Register(client.Close))
+            {
+                var request = await ReadRequestAsync(
+                    client.GetStream(),
+                    cancellationToken).ConfigureAwait(false);
+                var result = ParseCallback(request.Target);
+                var validState = FixedTimeEquals(result.State, _state);
+                var statusCode = validState && result.Error.Length == 0 && result.Code.Length > 0
+                    ? 200
+                    : 400;
+                var title = statusCode == 200
+                    ? "授权完成，请返回 WorldBirdLauncher"
+                    : "授权失败，请返回 WorldBirdLauncher 查看原因";
+                await WriteResponseAsync(
+                    client.GetStream(),
+                    statusCode,
+                    title,
+                    cancellationToken).ConfigureAwait(false);
+                return result;
+            }
+        }
+    }
+
+    private sealed record CallbackResult(
+        string Code,
+        string State,
+        string Error,
+        string ErrorDescription);
+
+    private sealed record HttpRequestData(string Target);
+
+    private static List<TcpListener> StartLoopbackListeners(out int port)
+    {
+        var listeners = new List<TcpListener>(2);
+        var primary = new TcpListener(IPAddress.Loopback, 0);
+        primary.Start();
+        listeners.Add(primary);
+        port = ((IPEndPoint)primary.LocalEndpoint).Port;
+        try
+        {
+            var secondary = new TcpListener(IPAddress.IPv6Loopback, port);
+            secondary.Start();
+            listeners.Add(secondary);
+        }
+        catch (SocketException)
+        {
+            // IPv4 回环已经可用；浏览器探测 localhost 时会回退到 IPv4。
+        }
+        return listeners;
+    }
+
+    private static async Task<HttpRequestData> ReadRequestAsync(
+        NetworkStream stream,
+        CancellationToken cancellationToken)
+    {
+        var buffer = new byte[2048];
+        using var received = new MemoryStream();
+        while (received.Length < MaximumCallbackBytes)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var read = await stream.ReadAsync(buffer, 0, buffer.Length).ConfigureAwait(false);
+            if (read <= 0)
+            {
+                break;
+            }
+            received.Write(buffer, 0, read);
+            var text = Encoding.ASCII.GetString(received.GetBuffer(), 0, (int)received.Length);
+            var headerEnd = text.IndexOf("\r\n\r\n", StringComparison.Ordinal);
+            if (headerEnd < 0)
+            {
+                continue;
+            }
+            var requestLine = text[..text.IndexOf("\r\n", StringComparison.Ordinal)];
+            var parts = requestLine.Split(' ');
+            if (parts.Length < 3 ||
+                !string.Equals(parts[0], "GET", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new MicrosoftAuthException("微软授权回调不是有效的 GET 请求。");
+            }
+            var target = parts[1];
+            var pathEnd = target.IndexOf('?');
+            var path = pathEnd < 0 ? target : target[..pathEnd];
+            if (!string.Equals(path, CallbackPath, StringComparison.Ordinal))
+            {
+                throw new MicrosoftAuthException("微软授权回调路径无效。");
+            }
+            return new HttpRequestData(target);
+        }
+        throw new MicrosoftAuthException("微软授权回调请求过大或格式无效。");
+    }
+
+    private static CallbackResult ParseCallback(string target)
+    {
+        var queryStart = target.IndexOf('?');
+        if (queryStart < 0)
+        {
+            return new CallbackResult(string.Empty, string.Empty, string.Empty, string.Empty);
+        }
+        var parameters = new Dictionary<string, List<string>>(StringComparer.Ordinal);
+        foreach (var pair in target[(queryStart + 1)..].Split('&'))
+        {
+            if (pair.Length == 0)
+            {
+                continue;
+            }
+            var separator = pair.IndexOf('=');
+            var key = Uri.UnescapeDataString(separator < 0 ? pair : pair[..separator]);
+            var value = Uri.UnescapeDataString(separator < 0 ? string.Empty : pair[(separator + 1)..]);
+            if (!parameters.TryGetValue(key, out var values))
+            {
+                values = [];
+                parameters[key] = values;
+            }
+            values.Add(value);
+        }
+
+        string Single(string name) =>
+            parameters.TryGetValue(name, out var values) && values.Count == 1
+                ? values[0]
+                : string.Empty;
+
+        return new CallbackResult(
+            Single("code"),
+            Single("state"),
+            Single("error"),
+            Single("error_description"));
+    }
+
+    private static async Task WriteResponseAsync(
+        NetworkStream stream,
+        int statusCode,
+        string title,
+        CancellationToken cancellationToken)
+    {
+        var html =
+            "<!doctype html><meta charset=\"utf-8\"><title>" + title + "</title>" +
+            "<style>body{font-family:'Microsoft YaHei UI','Segoe UI',sans-serif;" +
+            "background:#fff8fb;color:#28303d;padding:48px;text-align:center}" +
+            "main{max-width:520px;margin:auto;padding:28px;border:1px solid #ebd4de;" +
+            "border-radius:12px;background:#fff}h1{font-size:22px}</style>" +
+            "<main><h1>" + title + "</h1><p>现在可以关闭此浏览器页面。</p></main>";
+        var body = Encoding.UTF8.GetBytes(html);
+        var reason = statusCode == 200 ? "OK" : "Bad Request";
+        var header = Encoding.ASCII.GetBytes(
+            $"HTTP/1.1 {statusCode} {reason}\r\n" +
+            "Content-Type: text/html; charset=utf-8\r\n" +
+            "Cache-Control: no-store\r\n" +
+            "Pragma: no-cache\r\n" +
+            $"Content-Length: {body.Length}\r\n" +
+            "Connection: close\r\n\r\n");
+        await stream.WriteAsync(header, 0, header.Length).ConfigureAwait(false);
+        await stream.WriteAsync(body, 0, body.Length).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+    }
+
+    private static byte[] RandomBytes(int count)
+    {
+        var bytes = new byte[count];
+        using var random = RandomNumberGenerator.Create();
+        random.GetBytes(bytes);
+        return bytes;
+    }
+
+    private static byte[] Sha256(byte[] value)
+    {
+        using var hash = SHA256.Create();
+        return hash.ComputeHash(value);
+    }
+
+    private static string Base64Url(byte[] value) =>
+        Convert.ToBase64String(value)
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
+
+    internal static string CreatePkceChallenge(string verifier) =>
+        Base64Url(Sha256(Encoding.ASCII.GetBytes(verifier)));
+
+    private static bool FixedTimeEquals(string left, string right)
+    {
+        var leftBytes = Encoding.ASCII.GetBytes(left ?? string.Empty);
+        var rightBytes = Encoding.ASCII.GetBytes(right ?? string.Empty);
+        var difference = leftBytes.Length ^ rightBytes.Length;
+        var length = Math.Max(leftBytes.Length, rightBytes.Length);
+        for (var index = 0; index < length; index++)
+        {
+            var leftValue = index < leftBytes.Length ? leftBytes[index] : 0;
+            var rightValue = index < rightBytes.Length ? rightBytes[index] : 0;
+            difference |= leftValue ^ rightValue;
+        }
+        return difference == 0;
     }
 
     /// <summary>用 refresh_token 免授权换新 token（启动时静默续期用）。</summary>

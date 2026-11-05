@@ -83,7 +83,7 @@ public sealed class CatalogApiClient
             BaseAddress = new Uri((endpoint ?? AppInfo.CatalogEndpoint).TrimEnd('/') + "/"),
             Timeout = TimeSpan.FromSeconds(20),
         };
-        _http.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.2");
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.1.1");
     }
 
     public string Endpoint => _http.BaseAddress?.ToString() ?? string.Empty;

@@ -57,7 +57,7 @@ public class JavaDetectionTests
     [Fact]
     public void 扫不存在的目录不抛异常也不返回结果() =>
         Assert.Empty(JavaRuntimeService.ScanForJavaExecutables(
-            Path.Combine(Path.GetTempPath(), "mcsl-not-exist-" + Guid.NewGuid().ToString("N")),
+            Path.Combine(Path.GetTempPath(), "wbl-not-exist-" + Guid.NewGuid().ToString("N")),
             maxDepth: 3));
 
     [Fact]
@@ -105,7 +105,7 @@ public class JavaDetectionTests
 
     private static string NewTempRoot()
     {
-        var root = Path.Combine(Path.GetTempPath(), "mcsl-test-" + Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(Path.GetTempPath(), "wbl-test-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         return root;
     }

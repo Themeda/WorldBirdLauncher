@@ -176,7 +176,7 @@ public class GameInstallationTests
 
     private static string NewGameRoot()
     {
-        var root = Path.Combine(Path.GetTempPath(), "mcsl-install-" + Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(Path.GetTempPath(), "wbl-install-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(root);
         return root;
     }

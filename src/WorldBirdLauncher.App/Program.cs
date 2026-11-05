@@ -16,12 +16,12 @@ namespace WorldBirdLauncher.App;
 ///    `%LOCALAPPDATA%\WorldBirdLauncher\native\&lt;版本&gt;` 并 `SetDllDirectory` 指过去；
 /// ③ 绑定重定向（.exe.config）也不需要了——解析器按"简单名"返回嵌入的那份程序集，任何版本请求都能满足。
 ///
-/// 载荷布局：`[exe 原始字节][zip 载荷][8 字节长度(小端)][8 字节魔数 "MCSLPAY1"]`。
+/// 载荷布局：`[exe 原始字节][zip 载荷][8 字节长度(小端)][8 字节魔数 "WBLPAY01"]`。
 /// 这个入口只在 net48 上启用（见 csproj 的 StartupObject）；net8 那条路仍是官方自包含单文件。
 /// </summary>
 internal static class Program
 {
-    private const string PayloadMagic = "MCSLPAY1";
+    private const string PayloadMagic = "WBLPAY01";
     private const int FooterSize = 16;
 
     private static readonly object Gate = new();

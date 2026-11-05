@@ -28,24 +28,21 @@
             <ScrollViewer Grid.Row="2" Margin="0,12,0,0" VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
             <StackPanel>
-                <!-- 微软正版登录：设备代码流（浏览器里输 code 授权，窗口自动轮询） -->
+                <!-- 微软正版登录：授权代码流 + PKCE，由系统浏览器完成授权 -->
                 <StackPanel x:Name="MicrosoftPanel" Visibility="Collapsed">
-                    <TextBlock Text="1）打开微软登录页" FontSize="11" Margin="0,0,0,4"
+                    <TextBlock Text="系统浏览器会自动打开微软授权页" FontSize="11" Margin="0,0,0,4"
                                Foreground="{DynamicResource TextSecondaryBrush}" />
                     <TextBlock x:Name="MsUrlText" FontSize="12" TextWrapping="Wrap"
                                Foreground="{DynamicResource AccentBrush}" />
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Button x:Name="MsOpenButton" Content="打开登录页" Height="30" Padding="12,0"
+                        <Button x:Name="MsOpenButton" Content="重新打开浏览器" Height="30" Padding="12,0"
                                 Style="{StaticResource GhostButton}" Click="OnOpenMicrosoftPage" />
-                        <Button x:Name="MsCopyButton" Content="复制代码" Height="30" Margin="8,0,0,0" Padding="12,0"
-                                Style="{StaticResource GhostButton}" Click="OnCopyMicrosoftCode" />
-                        <Button x:Name="MsRetryButton" Content="重新获取代码" Height="30" Margin="8,0,0,0" Padding="12,0"
+                        <Button x:Name="MsRetryButton" Content="重新开始" Height="30" Margin="8,0,0,0" Padding="12,0"
                                 Style="{StaticResource GhostButton}" Click="OnRetryMicrosoftCode" />
                     </StackPanel>
-                    <TextBlock Text="2）输入下面的一次性代码并确认" FontSize="11" Margin="0,12,0,4"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                    <TextBox x:Name="MsCodeBox" Height="44" IsReadOnly="True" FontSize="22" FontWeight="SemiBold"
-                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+                    <TextBlock Text="请勿同时打开其他网页；若收到 state 校验失败提示，请关闭其他页面后重新开始。"
+                               FontSize="10" Margin="0,10,0,0" TextWrapping="Wrap"
+                               Foreground="{DynamicResource TextMutedBrush}" />
                     <TextBlock x:Name="MsStatusText" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap"
                                Foreground="{DynamicResource TextMutedBrush}" />
                 </StackPanel>

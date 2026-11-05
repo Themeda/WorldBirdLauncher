@@ -333,7 +333,7 @@ public sealed class OptiFineInstallerService
         }
 
         using var http = new System.Net.Http.HttpClient { Timeout = TimeSpan.FromSeconds(60) };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.1");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.1.1");
 
         var downloaded = 0;
         foreach (var library in libraries.EnumerateArray())

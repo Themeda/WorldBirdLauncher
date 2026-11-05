@@ -12,20 +12,20 @@ public static class AppInfo
     /// 部署到 VPS 后只需要改这一行常量（换成正式域名，例如 https://api.example.com）。
     /// </summary>
     /// <summary>
-    /// 目录服务端地址。VPS 上没有域名、用反向代理映射到子路径 <c>/mcsl-server/</c>，
-    /// 所以这里带上前缀：请求会打到 <c>http://121.41.81.251/mcsl-server/api/v1/…</c>。
+    /// 目录服务端地址。公网反向代理映射到 <c>/wbl-server/</c>，
+    /// 因此请求会打到 <c>https://worldcraft.com.cn/wbl-server/api/v1/…</c>。
     /// （本地开发调试时改回 http://localhost:5080 即可。）
     /// </summary>
-    public const string CatalogEndpoint = "http://121.41.81.251/mcsl-server";
+    public const string CatalogEndpoint = "https://worldcraft.com.cn/wbl-server";
 
     /// <summary>上报接口的内置 key（只防误用，不是安全边界）。</summary>
-    public const string CatalogClientKey = "mcsl-local-dev-key";
+    public const string CatalogClientKey = "wbl-public-client";
 
     /// <summary>
     /// 官网「服主入口」页。客户端设置页的「提交服务器」改成跳这里——
     /// 引导用户注册/登录后，在服主后台提交新服务器（用户 2026-10-10 要求）。
     /// </summary>
-    public const string AdvertiserEntryUrl = "http://121.41.81.251/advertiser/";
+    public const string AdvertiserEntryUrl = "https://worldcraft.com.cn/advertiser/";
 
     /// <summary>客户端版本（匿名指标上报时带上，用来分版本看数据）。</summary>
     public static string ClientVersion =>

@@ -3,7 +3,7 @@
 # WorldBirdLauncher
 
 WorldBirdLauncher (WBL) is a Minecraft server browser and launcher client for Windows 10 and 11.
-This repository contains a source snapshot of the WorldBirdLauncher client dated **2026-10-24** and is licensed under the MIT License.
+This repository contains a source snapshot of the WorldBirdLauncher client dated **2026-11-05** and is licensed under the MIT License.
 
 ## Current client features
 
@@ -11,6 +11,7 @@ This repository contains a source snapshot of the WorldBirdLauncher client dated
 - Display server status, MOTD, connection routes, mod loaders, versions, and listing information.
 - Support local latency testing, favorites, play history, and full-size server-detail images.
 - Support Microsoft, external Yggdrasil, and UnifiedPass login; the current public edition does not provide offline login.
+- Microsoft login uses the authorization code flow with PKCE through the system browser and an ephemeral loopback callback.
 - Support Java detection, version isolation, integrity checks, game launching, and direct server join.
 - Support installing Fabric, Quilt, Forge, NeoForge, and OptiFine.
 - Support modpack imports, mod search and downloads, and a resource download queue.
@@ -22,6 +23,8 @@ This repository contains a source snapshot of the WorldBirdLauncher client dated
 - .NET SDK 8.0.
 - Visual Studio 2022 is optional but provides a better experience with the WPF workload.
 - Microsoft Edge WebView2 Runtime is required for the 3D skin page.
+- The Microsoft app registration must contain the **Mobile and desktop applications** redirect URI
+  `http://localhost/callback`. Microsoft treats the loopback port dynamically.
 
 The client targets both `net8.0-windows` and `net48`. Official distribution uses the project's custom net48 single-file packaging.
 

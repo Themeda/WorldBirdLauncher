@@ -73,7 +73,7 @@ public class LauncherJsonShapeTests
     [Fact]
     public void 规划下载清单时从顶层读取资源索引()
     {
-        var root = Path.Combine(Path.GetTempPath(), "mcsl-test-" + Guid.NewGuid().ToString("N"));
+        var root = Path.Combine(Path.GetTempPath(), "wbl-test-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(Path.Combine(root, "versions", "X"));
         var versionJsonPath = Path.Combine(root, "versions", "X", "X.json");
         File.WriteAllText(versionJsonPath,
