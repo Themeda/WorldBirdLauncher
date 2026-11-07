@@ -27,7 +27,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private ServerCardViewModel? _selectedServer;
     private bool _isRefreshing;
     private bool _suppressFilter;
-    private CancellationTokenSource? _copyToastCancellation;
+    private CancellationTokenSource? _toastCancellation;
 
     /// <summary>托盘图标（按需创建：启动游戏后 / 关闭按钮收进托盘时）。</summary>
     private System.Windows.Forms.NotifyIcon? _trayIcon;
@@ -118,7 +118,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         // 后台下载：订阅进度更新悬浮按钮，全部完成时浮出气泡
         DownloadManager.Current.PropertyChanged += (_, _) => UpdateDownloadBadge();
-        DownloadManager.Current.AllCompleted += ShowDownloadToast;
+        DownloadManager.Current.AllCompleted += ShowDownloadCompletedToast;
 
         Loaded += async (_, _) =>
         {
@@ -183,22 +183,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         NavDownload.IsChecked = true; // 进入下载管理界面
     }
 
-    private void ShowDownloadToast()
+    private void ShowDownloadCompletedToast()
     {
         var manager = DownloadManager.Current;
         var failed = manager.Tasks.Count(t => t.Status == Services.DownloadStatus.失败);
-        DownloadToastText.Text = failed == 0
+        ShowToast(failed == 0
             ? $"下载已完成（{manager.Tasks.Count(t => t.Status == Services.DownloadStatus.已完成)} 个任务）。点右下角按钮可查看详情。"
-            : $"下载结束：{failed} 个任务失败，可在「资源下载」页查看原因。";
-        DownloadToast.Visibility = Visibility.Visible;
-
-        var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(8) };
-        timer.Tick += (_, _) =>
-        {
-            timer.Stop();
-            DownloadToast.Visibility = Visibility.Collapsed;
-        };
-        timer.Start();
+            : $"下载结束：{failed} 个任务失败，可在「资源下载」页查看原因。");
     }
 
     private void OnClose(object sender, RoutedEventArgs e) => Close();
@@ -789,6 +780,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 {
                     UpdateEmptyState(true);
                     StatusBar.Text = "无法连接服务器列表服务端，且本地没有缓存数据。请检查网络或稍后点「立即刷新」。";
+                    ShowToast(StatusBar.Text);
                 });
             }
         }
@@ -804,6 +796,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             if (update.IsEmpty)
             {
                 StatusBar.Text = $"服务器列表数据已检查（revision {update.ToRevision}，无条目变化）。";
+                ShowToast(StatusBar.Text);
                 return;
             }
 
@@ -812,11 +805,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 // 用户正在看列表页 → 先问一句
                 _pendingCatalogUpdate = update;
                 StatusBar.Text = $"服务器列表有更新（+{update.Added} / -{update.Removed} 条），等待你确认后应用。";
+                ShowToast(StatusBar.Text);
             }
             else
             {
                 ApplyCatalogUpdate(update);
                 StatusBar.Text = $"已静默更新服务器列表数据：revision {update.ToRevision}（+{update.Added} / -{update.Removed}）。";
+                ShowToast(StatusBar.Text);
             }
         });
     }
@@ -1542,6 +1537,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _suppressFilter = false;
         ApplyFilters();
         StatusBar.Text = "已重置筛选条件。";
+        ShowToast(StatusBar.Text);
     }
 
     private void OnCardClick(object sender, MouseButtonEventArgs e)
@@ -1648,12 +1644,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             Clipboard.SetText(item.EndPoint);
             StatusBar.Text = $"已复制 {item.EndPoint} 到剪贴板。";
-            ShowCopyToast($"已复制地址：{item.EndPoint}");
+            ShowToast($"已复制地址：{item.EndPoint}");
         }
         catch (Exception ex)
         {
             StatusBar.Text = $"复制失败：{ex.Message}";
-            ShowCopyToast("复制地址失败");
+            ShowToast("复制地址失败");
         }
     }
 
@@ -1701,6 +1697,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         _store.SetPreferredRoute(item.ServerId, item.EndPoint);
         StatusBar.Text = $"直连启动将使用：{item.EndPoint}";
+        ShowToast(StatusBar.Text);
     }
 
     /// <summary>直连启动使用的地址：优先用户在该服务器详情页选定的线路。</summary>
@@ -1724,6 +1721,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (!confirmed)
         {
             StatusBar.Text = "已取消访问。";
+            ShowToast(StatusBar.Text);
             return;
         }
 
@@ -1734,10 +1732,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 UseShellExecute = true,
             });
             StatusBar.Text = $"已在默认浏览器打开：{url}";
+            ShowToast("已打开链接");
         }
         catch (Exception ex)
         {
             StatusBar.Text = $"打开失败：{ex.Message}";
+            ShowToast(StatusBar.Text);
         }
     }
 
@@ -2132,6 +2132,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         SelectedServer = null;
         LoadServers();
         StatusBar.Text = $"已从我的列表移除「{server.Name}」（也取消了收藏与游玩记录）。";
+        ShowToast(StatusBar.Text);
     }
 
     private void OnToggleFavorite(object sender, RoutedEventArgs e)
@@ -2143,6 +2144,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         server.IsFavorite = _store.ToggleFavorite(server.Id);
         StatusBar.Text = server.IsFavorite ? $"已收藏 {server.Name}。" : $"已取消收藏 {server.Name}。";
+        ShowToast(StatusBar.Text);
         if (server.IsFavorite)
         {
             _ = _session.RemoteCatalog.ReportEventAsync("favorite", server.Id); // 匿名上报（服务端全站榜单）
@@ -2173,12 +2175,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             Clipboard.SetText(server.EndPoint);
             StatusBar.Text = $"已复制 {server.EndPoint} 到剪贴板。";
-            ShowCopyToast($"已复制 IP：{server.EndPoint}");
+            ShowToast($"已复制 IP：{server.EndPoint}");
         }
         catch (Exception ex)
         {
             StatusBar.Text = $"复制失败：{ex.Message}";
-            ShowCopyToast("复制 IP 失败");
+            ShowToast("复制 IP 失败");
         }
     }
 
@@ -2196,25 +2198,36 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             Clipboard.SetText(server.Name);
             StatusBar.Text = $"已复制服务器名称：{server.Name}";
-            ShowCopyToast($"已复制服务器名称：{server.Name}");
+            ShowToast($"已复制服务器名称：{server.Name}");
         }
         catch (Exception ex)
         {
             StatusBar.Text = $"复制失败：{ex.Message}";
-            ShowCopyToast("复制服务器名称失败");
+            ShowToast("复制服务器名称失败");
         }
     }
 
-    private async void ShowCopyToast(string message)
+    public void ShowToast(string message)
+    {
+        if (!Dispatcher.CheckAccess())
+        {
+            Dispatcher.BeginInvoke(new Action(() => ShowToast(message)));
+            return;
+        }
+
+        _ = ShowToastAsync(message);
+    }
+
+    private async Task ShowToastAsync(string message)
     {
         var cancellation = new CancellationTokenSource();
-        _copyToastCancellation?.Cancel();
-        _copyToastCancellation = cancellation;
+        _toastCancellation?.Cancel();
+        _toastCancellation = cancellation;
 
-        CopyToast.BeginAnimation(UIElement.OpacityProperty, null);
-        CopyToastText.Text = message;
-        CopyToast.Opacity = 1;
-        CopyToast.Visibility = Visibility.Visible;
+        AppToast.BeginAnimation(UIElement.OpacityProperty, null);
+        AppToastText.Text = message;
+        AppToast.Opacity = 1;
+        AppToast.Visibility = Visibility.Visible;
 
         try
         {
@@ -2224,7 +2237,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             {
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn },
             };
-            CopyToast.BeginAnimation(UIElement.OpacityProperty, fade);
+            AppToast.BeginAnimation(UIElement.OpacityProperty, fade);
             await Task.Delay(1000, cancellation.Token);
         }
         catch (OperationCanceledException)
@@ -2233,12 +2246,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
         finally
         {
-            if (ReferenceEquals(_copyToastCancellation, cancellation))
+            if (ReferenceEquals(_toastCancellation, cancellation))
             {
-                CopyToast.BeginAnimation(UIElement.OpacityProperty, null);
-                CopyToast.Opacity = 0;
-                CopyToast.Visibility = Visibility.Collapsed;
-                _copyToastCancellation = null;
+                AppToast.BeginAnimation(UIElement.OpacityProperty, null);
+                AppToast.Opacity = 0;
+                AppToast.Visibility = Visibility.Collapsed;
+                _toastCancellation = null;
             }
 
             cancellation.Dispose();
@@ -2291,10 +2304,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 {
                     System.Windows.Clipboard.SetText(download.ExtractCode!);
                     StatusBar.Text = $"已在浏览器打开下载页，提取码 {download.ExtractCode} 已复制到剪贴板。";
+                    ShowToast("下载页已打开，提取码已复制");
                 }
                 catch (Exception)
                 {
                     StatusBar.Text = $"已在浏览器打开下载页，提取码：{download.ExtractCode}";
+                    ShowToast("下载页已打开");
                 }
             }
         }
@@ -2314,6 +2329,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (string.IsNullOrWhiteSpace(url))
         {
             StatusBar.Text = "该服务器没有提供客户端下载地址，请通过 QQ 群或官网联系服主。";
+            ShowToast(StatusBar.Text);
             return;
         }
 
@@ -2331,10 +2347,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             Clipboard.SetText(SelectedServer.Entry.QqGroup!);
             StatusBar.Text = $"已复制 QQ 群号：{SelectedServer.Entry.QqGroup}";
+            ShowToast(StatusBar.Text);
         }
         catch (Exception ex)
         {
             StatusBar.Text = $"复制失败：{ex.Message}";
+            ShowToast(StatusBar.Text);
         }
     }
 
@@ -2354,6 +2372,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         if (!_session.IsReadyToLaunch)
         {
             StatusBar.Text = $"已填入 {server.Name}（{endpoint}）。请先在启动器页完成账户登录与 Java 选择。";
+        ShowToast($"已填入 {server.Name} 的服务器地址");
             return;
         }
 
@@ -2383,6 +2402,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _ = _session.RemoteCatalog.ReportEventAsync("launch", server.Id); // 匿名上报（服务端全站榜单）
         OnPropertyChanged(nameof(History));
         StatusBar.Text = $"已向启动器发出启动指令：{server.Name}（{endpoint}）。";
+        ShowToast(StatusBar.Text);
     }
 
     /// <summary>
@@ -2442,6 +2462,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 if (picker.ShowDialog() != true)
                 {
                     StatusBar.Text = $"已取消启动（未选择版本）：{serverName}";
+                    ShowToast(StatusBar.Text);
                     return Task.FromResult(false);
                 }
 
@@ -2458,6 +2479,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             _session.CurrentVersionId = chosen;
             StatusBar.Text = $"已自动切换到 {chosen}（服务器「{serverName}」支持 {supported}）。";
+            ShowToast(StatusBar.Text);
             return Task.FromResult(true);
         }
 
@@ -2467,6 +2489,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             $"服务器「{serverName}」支持 {supported}，但本机没有可用的匹配版本。\n\n" +
             "请使用官方启动器或其他来源安装对应游戏版本，再到设置页选择后启动。");
         StatusBar.Text = $"已取消启动（本机没有 {supported} 的可用版本）：{serverName}";
+        ShowToast(StatusBar.Text);
         return Task.FromResult(false);
     }
 
@@ -2479,10 +2502,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 UseShellExecute = true,
             });
             StatusBar.Text = "已打开服务器提交页面，填写后提交即可（首次提交需人工审核）。";
+            ShowToast("已打开服务器提交页面");
         }
         catch (Exception ex)
         {
             StatusBar.Text = $"无法打开浏览器：{ex.Message}";
+            ShowToast(StatusBar.Text);
         }
     }
 

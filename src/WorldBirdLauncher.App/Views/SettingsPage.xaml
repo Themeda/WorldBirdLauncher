@@ -70,6 +70,8 @@
                                          IsReadOnly="True" ToolTip="当前强调色" />
                                 <Button Content="选择颜色…" Style="{StaticResource GhostButton}"
                                         Height="34" Margin="10,0,0,0" Click="OnPickAccentColor" />
+                                <Button Content="恢复默认" Style="{StaticResource LinkButton}"
+                                        Height="34" Margin="8,0,0,0" Click="OnResetAccent" />
                             </StackPanel>
                         </StackPanel>
                     </Border>

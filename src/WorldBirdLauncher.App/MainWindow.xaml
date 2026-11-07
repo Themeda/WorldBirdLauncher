@@ -872,21 +872,18 @@
                 </StackPanel>
             </Border>
 
-            <!-- 后台下载全部完成的气泡通知 -->
-            <Border x:Name="DownloadToast" Grid.Row="1" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                    Margin="0,0,30,130" Background="{DynamicResource SurfaceBrush}" CornerRadius="10" Padding="16,12"
-                    BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1" Visibility="Collapsed">
-                <TextBlock x:Name="DownloadToastText" FontSize="12" TextWrapping="Wrap" MaxWidth="280"
-                           Foreground="{DynamicResource TextPrimaryBrush}" />
-            </Border>
-
-            <!-- 复制操作提示：顶部居中胶囊，完整显示 1 秒后再渐隐 1 秒 -->
-            <Border x:Name="CopyToast" Grid.Row="0" Grid.RowSpan="3" Panel.ZIndex="300"
+            <!-- 通用操作提示：完整显示 1 秒后再渐隐 1 秒 -->
+            <Border x:Name="AppToast" Grid.Row="0" Grid.RowSpan="3" Panel.ZIndex="300"
                     HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,54,0,0"
-                    Background="{DynamicResource AccentBrush}" CornerRadius="16" Padding="14,7"
+                    Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource AccentBrush}"
+                    BorderThickness="1" CornerRadius="16" Padding="14,7"
                     IsHitTestVisible="False" Visibility="Collapsed" Opacity="0">
-                <TextBlock x:Name="CopyToastText" FontSize="12" FontWeight="Bold"
-                           Foreground="White" MaxWidth="520" TextTrimming="CharacterEllipsis" />
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="16" ShadowDepth="3" Opacity="0.18" />
+                </Border.Effect>
+                <TextBlock x:Name="AppToastText" FontSize="12" FontWeight="Bold"
+                           Foreground="{DynamicResource TextPrimaryBrush}" MaxWidth="520"
+                           TextWrapping="Wrap" TextTrimming="CharacterEllipsis" />
             </Border>
 
             <!-- 服务器详情大图查看：覆盖整个启动器窗口（含标题栏/侧栏） -->

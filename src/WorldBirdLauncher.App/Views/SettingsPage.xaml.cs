@@ -119,7 +119,24 @@ public partial class SettingsPage : UserControl
         _session.Settings.Save();
         ThemeManager.Apply(_session.Settings.ThemeMode, hex);
         SaveStatus.Text = "主题颜色已应用并保存";
+        ShowToast("主题颜色已应用并保存");
     }
+
+    private void OnResetAccent(object sender, RoutedEventArgs e)
+    {
+        var hex = ThemeManager.DefaultAccent;
+        AccentColorBox.Text = hex;
+        AccentPreview.Background = new SolidColorBrush(
+            (Color)ColorConverter.ConvertFromString(hex));
+        _session.Settings.AccentColor = hex;
+        _session.Settings.Save();
+        ThemeManager.Apply(_session.Settings.ThemeMode, hex);
+        SaveStatus.Text = "主题颜色已恢复默认";
+        ShowToast("主题颜色已恢复默认");
+    }
+
+    private void ShowToast(string message) =>
+        (Window.GetWindow(this) as MainWindow)?.ShowToast(message);
 
     /// <summary>显示服务端地址（只读）、当前数据版本与上次更新时间。</summary>
     private void RefreshCatalogStatus()
@@ -145,10 +162,12 @@ public partial class SettingsPage : UserControl
         catch (Exception ex)
         {
             CatalogStatus.Text = $"刷新失败：{ex.Message}";
+            ShowToast($"服务器列表刷新失败：{ex.Message}");
             return;
         }
 
         RefreshCatalogStatus();
+        ShowToast("服务器列表已刷新");
     }
 
     /// <summary>内存滑动条：128MB ～ 本机物理内存，步进 128MB，拖动即时同步到输入框。</summary>
@@ -385,6 +404,7 @@ public partial class SettingsPage : UserControl
                     MaintenanceStatus.Text = packOk
                         ? "整合包安装完成（明细见「资源下载」）。"
                         : "整合包安装失败或被取消，详情见「资源下载」。";
+                    ShowToast(MaintenanceStatus.Text);
                     RefreshVersionList();
                     break;
                 }
@@ -396,6 +416,7 @@ public partial class SettingsPage : UserControl
                     search.ShowDialog();
                     RefreshJavaList();
                     MaintenanceStatus.Text = $"Java 检测完成，共 {JavaBox.Items.Count} 个可用 Java 版本。";
+                    ShowToast(MaintenanceStatus.Text);
                     break;
                 }
 
@@ -415,6 +436,7 @@ public partial class SettingsPage : UserControl
                     }
 
                     MaintenanceStatus.Text = download.StatusMessage;
+                    ShowToast(download.StatusMessage);
                     break;
                 }
 
@@ -437,6 +459,7 @@ public partial class SettingsPage : UserControl
         catch (Exception ex)
         {
             MaintenanceStatus.Text = $"操作失败：{ex.Message}";
+            ShowToast(MaintenanceStatus.Text);
         }
         finally
         {
@@ -460,12 +483,14 @@ public partial class SettingsPage : UserControl
         if (!int.TryParse(CacheBox.Text.Trim(), out var seconds) || seconds < 5)
         {
             SaveStatus.Text = "缓存时长需要是不小于 5 的整数";
+            ShowToast(SaveStatus.Text);
             return;
         }
 
         if (!ThemeManager.TryNormalizeAccent(AccentColorBox.Text, out var accent))
         {
             SaveStatus.Text = "主题颜色格式应为 #RRGGBB";
+            ShowToast(SaveStatus.Text);
             return;
         }
 
@@ -497,6 +522,7 @@ public partial class SettingsPage : UserControl
         _session.Installation.SetDownloadSource(_session.Settings.UseMirror);
 
         SaveStatus.Text = "已保存";
+        ShowToast("设置已保存");
         LauncherReloadRequested?.Invoke();
     }
 
@@ -508,10 +534,12 @@ public partial class SettingsPage : UserControl
         {
             Process.Start(new ProcessStartInfo(AppInfo.ServerOwnerEntryUrl) { UseShellExecute = true });
             CatalogStatus.Text = "已打开官网「服主入口」：注册/登录后即可在服主后台提交新服务器，审核通过后出现在列表里。";
+            ShowToast("已打开服主入口");
         }
         catch (Exception ex)
         {
             CatalogStatus.Text = $"打开浏览器失败：{ex.Message}（地址：{AppInfo.ServerOwnerEntryUrl}）";
+            ShowToast("打开服主入口失败");
         }
     }
 }

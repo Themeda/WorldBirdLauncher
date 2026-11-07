@@ -173,7 +173,7 @@ public partial class LauncherPage : UserControl
         }
 
         RefreshIdentity();
-        SetStatus($"登录成功：{_session.CurrentAccount?.DisplayText}");
+        SetStatus($"登录成功：{_session.CurrentAccount?.DisplayText}", toast: true);
         return true;
     }
 
@@ -185,11 +185,11 @@ public partial class LauncherPage : UserControl
         RefreshIdentity();
         if (ok && dialog.SwitchedTo is { } account)
         {
-            SetStatus($"已切换到 {account.DisplayText}");
+            SetStatus($"已切换到 {account.DisplayText}", toast: true);
         }
         else if (!ok)
         {
-            SetStatus("已关闭账号列表。");
+            SetStatus("已关闭账号列表。", toast: true);
         }
 
         return ok;
@@ -214,15 +214,19 @@ public partial class LauncherPage : UserControl
             return Task.FromResult(true);
         }
 
-        SetStatus("还没有登录：请点击「Microsoft 账户管理」完成正版授权。");
+        SetStatus("还没有登录：请点击「Microsoft 账户管理」完成正版授权。", toast: true);
         return Task.FromResult(false);
     }
 
     // ---------- 提示与进度 ----------
 
-    private void SetStatus(string text)
+    private void SetStatus(string text, bool toast = false)
     {
         SetHint(text);
+        if (toast)
+        {
+            (Window.GetWindow(this) as MainWindow)?.ShowToast(text);
+        }
     }
 
     /// <summary>
@@ -626,7 +630,7 @@ public partial class LauncherPage : UserControl
 
         if (already)
         {
-            SetStatus($"已取消选中 {item.Name}。");
+            SetStatus($"已取消选中 {item.Name}。", toast: true);
         }
         else
         {
@@ -647,13 +651,13 @@ public partial class LauncherPage : UserControl
 
         if (AccountMatcher.RequiresExternalAccount(entry))
         {
-            SetStatus($"已选中 {entry.Name}（{endpoint}）。{AccountMatcher.UnsupportedExternalAccountMessage}");
+            SetStatus($"已选中 {entry.Name}（{endpoint}）。{AccountMatcher.UnsupportedExternalAccountMessage}", toast: true);
             return;
         }
 
         SetStatus(restored
             ? $"已恢复上次选中的服务器：{entry.Name}（启动后将进入 {endpoint}）。"
-            : $"已选中 {entry.Name}：启动后将进入 {endpoint}。");
+            : $"已选中 {entry.Name}：启动后将进入 {endpoint}。", toast: !restored);
     }
 
     /// <summary>同步卡片的选中标记与「移除所选」按钮的显隐。</summary>
@@ -698,7 +702,7 @@ public partial class LauncherPage : UserControl
         _selectedRecentId = null;
         _session.Settings.LastRecentServerId = null;
         _session.Settings.Save();
-        SetStatus("已从「最近玩过的服务器」移除所选，收藏状态不受影响。");
+        SetStatus("已从「最近玩过的服务器」移除所选，收藏状态不受影响。", toast: true);
         _ = LoadRecentServersAsync();
     }
 
@@ -748,7 +752,7 @@ public partial class LauncherPage : UserControl
         // 进服会被服务器拒绝。这里先让他重新登录一次。
         if (_session.CurrentAccount is { } signedOutCandidate && AccountService.IsSignedOut(signedOutCandidate))
         {
-            SetStatus($"账户「{signedOutCandidate.Name}」已登出，请点击「Microsoft 账户管理」重新登录后再启动。");
+            SetStatus($"账户「{signedOutCandidate.Name}」已登出，请点击「Microsoft 账户管理」重新登录后再启动。", toast: true);
             return;
         }
 
@@ -767,7 +771,7 @@ public partial class LauncherPage : UserControl
             }
             catch (Exception ex)
             {
-                SetStatus($"微软登录已过期，请点击「Microsoft 账户管理」重新登录：{ex.Message}");
+                SetStatus($"微软登录已过期，请点击「Microsoft 账户管理」重新登录：{ex.Message}", toast: true);
                 return;
             }
         }
@@ -782,13 +786,13 @@ public partial class LauncherPage : UserControl
                 "无法启动该服务器",
                 $"服务器「{launchTarget.Name}」需要外部账户。\n\n" +
                 "当前公开版仅支持 Microsoft 账户，因此不会使用不匹配的账户进入服务器。");
-            SetStatus($"已取消启动：{launchTarget.Name} 需要外部账户，当前公开版无法连接。");
+            SetStatus($"已取消启动：{launchTarget.Name} 需要外部账户，当前公开版无法连接。", toast: true);
             return;
         }
 
         if (string.IsNullOrWhiteSpace(_session.CurrentVersionId))
         {
-            SetStatus("还没有选择游戏版本，请到「设置」里选择。");
+            SetStatus("还没有选择游戏版本，请到「设置」里选择。", toast: true);
             return;
         }
 
@@ -800,14 +804,14 @@ public partial class LauncherPage : UserControl
             if (Window.GetWindow(this) is MainWindow mainWindow &&
                 !await mainWindow.EnsureCompatibleVersionAsync(launchTarget, launchTarget.Name))
             {
-                SetStatus($"已取消启动：{launchTarget.Name} 需要的版本还没准备好。");
+                SetStatus($"已取消启动：{launchTarget.Name} 需要的版本还没准备好。", toast: true);
                 return;
             }
 
             // 版本可能刚被自动切换过，重新取一次；后面的 Java 校验也跟着走新版本
             if (string.IsNullOrWhiteSpace(_session.CurrentVersionId))
             {
-                SetStatus("还没有选择游戏版本，请到「设置」里选择。");
+                SetStatus("还没有选择游戏版本，请到「设置」里选择。", toast: true);
                 return;
             }
         }
@@ -827,7 +831,7 @@ public partial class LauncherPage : UserControl
             if (better is not null)
             {
                 _session.CurrentJava = better;
-                SetStatus($"已为本版本自动选用 {better.DisplayName}（{_session.CurrentVersionId} 需要 Java {required}）。");
+                SetStatus($"已为本版本自动选用 {better.DisplayName}（{_session.CurrentVersionId} 需要 Java {required}）。", toast: true);
             }
             else
             {
@@ -841,7 +845,7 @@ public partial class LauncherPage : UserControl
                 if (deepMatch is not null)
                 {
                     _session.CurrentJava = deepMatch;
-                    SetStatus($"深度扫描找到 {deepMatch.DisplayName}，已为本版本选用（{deepMatch.JavaPath}）。");
+                    SetStatus($"深度扫描找到 {deepMatch.DisplayName}，已为本版本选用（{deepMatch.JavaPath}）。", toast: true);
                 }
                 else if (!await EnsureJavaAsync(wantedJava))
                 {
@@ -860,7 +864,7 @@ public partial class LauncherPage : UserControl
             memory = 1024;
             _session.Settings.MaxMemoryMb = memory;
             _session.Settings.Save();
-            SetStatus($"检测到 32 位 Java，最大内存已自动限制为 {memory} MB（32 位 JVM 无法分配更大堆）。");
+            SetStatus($"检测到 32 位 Java，最大内存已自动限制为 {memory} MB（32 位 JVM 无法分配更大堆）。", toast: true);
         }
 
         var availableMb = (int)(NetCompat.AvailableMemoryBytes() / 1024 / 1024);
@@ -869,7 +873,7 @@ public partial class LauncherPage : UserControl
             memory = Math.Max(1024, availableMb - 1024);
             _session.Settings.MaxMemoryMb = memory;
             _session.Settings.Save();
-            SetStatus($"可用内存不足，最大内存已自动调整为 {memory} MB。");
+            SetStatus($"可用内存不足，最大内存已自动调整为 {memory} MB。", toast: true);
         }
 
         // 启动前先探一次服务器：连不上就问用户是否仍然启动（进入游戏后也可以手动重试）
@@ -889,7 +893,7 @@ public partial class LauncherPage : UserControl
                     "取消");
                 if (!keepGoing)
                 {
-                    SetStatus($"已取消启动：{serverAddress} 当前无法连接。");
+                    SetStatus($"已取消启动：{serverAddress} 当前无法连接。", toast: true);
                     return;
                 }
             }
@@ -918,6 +922,7 @@ public partial class LauncherPage : UserControl
             RecordLaunchHistory();
             Progress.Value = 100;
             SetHint($"游戏已启动（PID {result.ProcessId}）。");
+            (Window.GetWindow(this) as MainWindow)?.ShowToast("游戏已启动");
 
             // 交给主窗口跟踪进程：按设置收进托盘，游戏退出后自动显示
             if (result.Process is not null && Window.GetWindow(this) is MainWindow main)
@@ -930,7 +935,7 @@ public partial class LauncherPage : UserControl
         else
         {
             Progress.Visibility = Visibility.Collapsed;
-            SetStatus($"启动失败：{result.Message}");
+            SetStatus($"启动失败：{result.Message}", toast: true);
         }
 
         _busy = false;
@@ -1000,14 +1005,14 @@ public partial class LauncherPage : UserControl
             var java = await _session.Java.InstallAsync(required, new Progress<InstallProgress>(Report));
             _session.CurrentJava = java;
             _session.InvalidateJavaCache();
-            SetStatus($"已安装 {java.DisplayName}（{java.JavaPath}）。");
+            SetStatus($"已安装 {java.DisplayName}（{java.JavaPath}）。", toast: true);
             return true;
         }
         catch (Exception ex)
         {
             Progress.Visibility = Visibility.Collapsed;
             SetStatus($"自动下载 Java {required} 失败：{ex.Message}。可在「设置 → 游戏版本与 Java 版本」点「下载适配 Java」重试，" +
-                      $"或手动安装 Java {required} 后在设置页选择。");
+                      $"或手动安装 Java {required} 后在设置页选择。", toast: true);
             return false;
         }
         finally
