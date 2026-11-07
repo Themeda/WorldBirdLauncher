@@ -87,8 +87,27 @@ internal static class ThemeManager
             effective == Dark ? DarkPalette : LightPalette,
             StringComparer.Ordinal);
         var accent = ParseAccent(accentColor);
-        var surface = ParseColor(palette["SurfaceBrush"]);
         var white = Color.FromRgb(255, 255, 255);
+        var black = Color.FromRgb(0, 0, 0);
+        var darkSurface = Color.FromRgb(15, 22, 38);
+        var surface = effective == Dark
+            ? Blend(accent, darkSurface, 0.72)
+            : Blend(accent, white, 0.88);
+        var shellText = ContrastText(accent);
+
+        palette["BgBrush"] = ToHex(accent);
+        palette["SurfaceBrush"] = ToHex(surface);
+        palette["SurfaceHoverBrush"] = ToHex(effective == Dark
+            ? Blend(accent, darkSurface, 0.64)
+            : Blend(accent, white, 0.78));
+        palette["BorderBrush2"] = ToHex(Blend(surface, effective == Dark ? white : black, 0.16));
+        palette["DividerBrush"] = ToHex(Blend(surface, effective == Dark ? white : black, 0.09));
+        palette["ShellTextPrimaryBrush"] = ToHex(shellText);
+        palette["ShellTextSecondaryBrush"] = ToHex(Blend(shellText, accent, 0.22));
+        palette["ShellTextMutedBrush"] = ToHex(Blend(shellText, accent, 0.42));
+        palette["TextPrimaryBrush"] = effective == Dark ? "#F8FAFF" : "#0F172B";
+        palette["TextSecondaryBrush"] = effective == Dark ? "#B8C6DB" : "#556180";
+        palette["TextMutedBrush"] = effective == Dark ? "#8EA2BC" : "#8395B0";
         palette["AccentBrush"] = ToHex(accent);
         palette["AccentHoverBrush"] = ToHex(effective == Dark
             ? Blend(accent, white, 0.18)
@@ -149,6 +168,12 @@ internal static class ThemeManager
     }
 
     private static string ToHex(Color color) => $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+
+    private static Color ContrastText(Color background)
+    {
+        var luminance = (0.2126 * background.R + 0.7152 * background.G + 0.0722 * background.B) / 255;
+        return luminance > 0.58 ? Color.FromRgb(15, 23, 43) : Colors.White;
+    }
 
     /// <summary>Windows「个性化 → 颜色 → 选择默认应用模式」；读不到时按浅色。</summary>
     private static bool IsSystemDark()

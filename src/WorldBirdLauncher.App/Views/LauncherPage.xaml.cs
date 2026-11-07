@@ -1006,7 +1006,7 @@ public partial class LauncherPage : UserControl
         catch (Exception ex)
         {
             Progress.Visibility = Visibility.Collapsed;
-            SetStatus($"自动下载 Java {required} 失败：{ex.Message}。可在「设置 → 版本与运行时维护」点「下载适配 Java」重试，" +
+            SetStatus($"自动下载 Java {required} 失败：{ex.Message}。可在「设置 → 游戏版本与 Java 版本」点「下载适配 Java」重试，" +
                       $"或手动安装 Java {required} 后在设置页选择。");
             return false;
         }

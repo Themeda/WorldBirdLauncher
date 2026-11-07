@@ -59,7 +59,7 @@ public partial class JavaDownloadWindow : Window
         InstalledJava = existing;
         StatusMessage = $"已存在适配版本（{existing.DisplayName}），无需下载。";
         StatusText.Text = StatusMessage;
-        DetailText.Text = $"本机已检测到 {detectedCount} 个 Java 运行时，其中 {existing.DisplayName} 满足要求：\n{existing.JavaPath}";
+        DetailText.Text = $"本机已检测到 {detectedCount} 个 Java 版本，其中 {existing.DisplayName} 满足要求：\n{existing.JavaPath}";
         StartButton.Visibility = Visibility.Collapsed;
         DownloadProgress.IsIndeterminate = false;
         DownloadProgress.Visibility = Visibility.Collapsed;
@@ -85,7 +85,7 @@ public partial class JavaDownloadWindow : Window
 
             StatusMessage = "尚未下载。";
             StatusText.Text = StatusMessage;
-            DetailText.Text = $"深度扫描后本机共 {merged.Count} 个 Java 运行时，但都不满足 Java {_wantedVersion}。\n" +
+            DetailText.Text = $"深度扫描后本机共 {merged.Count} 个 Java 版本，但都不满足 Java {_wantedVersion}。\n" +
                               $"点「开始下载」将从 Adoptium 下载 JDK {_wantedVersion}（约 190–200 MB），" +
                               "安装到 %APPDATA%\\WorldBirdLauncher\\runtime。";
             DownloadProgress.IsIndeterminate = false;

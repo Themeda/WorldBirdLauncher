@@ -37,7 +37,7 @@ public partial class JavaSearchWindow : Window
     private async Task FastScanAsync()
     {
         SearchTitle.Text = "正在快速扫描…";
-        AppendLog("① 快速扫描：注册表 / JAVA_HOME / PATH / 常见安装目录 / 官方启动器运行时 / 上次深度扫描的记忆…");
+        AppendLog("① 快速扫描：注册表 / JAVA_HOME / PATH / 常见安装目录 / 官方启动器 Java 版本 / 上次深度扫描的记忆…");
         try
         {
             var found = await Task.Run(() => _session.Java.Detect(
@@ -153,7 +153,7 @@ public partial class JavaSearchWindow : Window
             AppendLog($"  · {java.DisplayName}  {java.JavaPath}");
         }
 
-        AppendLog($"{phase}结束：本次新增 {added.Count} 个，合计 {_result.Count} 个 Java 运行时。");
+        AppendLog($"{phase}结束：本次新增 {added.Count} 个，合计 {_result.Count} 个 Java 版本。");
         SummaryText.Text = $"共 {_result.Count} 个";
     }
 

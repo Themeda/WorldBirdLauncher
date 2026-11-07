@@ -24,7 +24,7 @@
                     <Image Width="20" Height="20" Source="Assets/app-icon.png" Stretch="Uniform"
                            RenderOptions.BitmapScalingMode="HighQuality" />
                     <TextBlock x:Name="TitleBrandText" Text="WorldBirdLauncher · 我的世界服务器列表" FontSize="12" Margin="8,0,0,0" VerticalAlignment="Center"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                               Foreground="{DynamicResource ShellTextSecondaryBrush}" />
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                     <Button Content="—" Style="{StaticResource TitleBarButton}" Click="OnMinimize" />
@@ -853,10 +853,10 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 <TextBlock x:Name="StatusBar" Grid.Column="0" Margin="16,0,12,0" VerticalAlignment="Center"
-                           FontSize="11" Foreground="{DynamicResource TextMutedBrush}"
+                           FontSize="11" Foreground="{DynamicResource ShellTextMutedBrush}"
                            Text="正在加载内置服务器数据…" TextTrimming="CharacterEllipsis" />
                 <TextBlock x:Name="LauncherHintBar" Grid.Column="1" Margin="0,0,16,0" VerticalAlignment="Center"
-                           FontSize="11" MaxWidth="620" Foreground="{DynamicResource TextSecondaryBrush}"
+                           FontSize="11" MaxWidth="620" Foreground="{DynamicResource ShellTextSecondaryBrush}"
                            TextTrimming="CharacterEllipsis" />
             </Grid>
 

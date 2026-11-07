@@ -115,8 +115,10 @@ public partial class SettingsPage : UserControl
         AccentColorBox.Text = hex;
         AccentPreview.Background = new SolidColorBrush(
             (Color)ColorConverter.ConvertFromString(hex));
+        _session.Settings.AccentColor = hex;
+        _session.Settings.Save();
         ThemeManager.Apply(_session.Settings.ThemeMode, hex);
-        SaveStatus.Text = "颜色已预览，点「保存设置」后保留";
+        SaveStatus.Text = "主题颜色已应用并保存";
     }
 
     /// <summary>显示服务端地址（只读）、当前数据版本与上次更新时间。</summary>
@@ -217,7 +219,7 @@ public partial class SettingsPage : UserControl
         }
 
         IncompleteVersionsText.Text =
-            $"检测到 {broken.Count} 个不完整的版本目录（缺少版本 JSON，无法启动，也不会出现在版本列表里）：" +
+            $"检测到 {broken.Count} 个不完整的版本目录：" +
             string.Join("、", broken.Select(v => v.Id)) +
             "。请用对应的加载器安装器补齐版本 JSON，或重新导入自带完整版本的整合包。";
         IncompleteVersionsText.Visibility = Visibility.Visible;
@@ -258,17 +260,15 @@ public partial class SettingsPage : UserControl
         var selected = index >= 0 && index < list.Count ? list[index] : null;
         JavaHintText.Text = selected is null
             ? allowsNewer
-                ? $"{versionId} 需要 Java {required}（读自版本 JSON），但本机还没有可用的 Java；点「下载适配 Java」会自动装齐。"
-                : $"{versionId} 属于老版本（1.13 之前），只能用 Java 8；本机还没有 Java 8，点「下载适配 Java」会自动装齐。"
+                ? $"{versionId} 需要 Java {required}，但本机还没有可用的 Java。请选择 Java {required} 或点击「下载适配 Java」。"
+                : $"{versionId} 需要 Java 8，但本机还没有可用的 Java 8。请选择 Java 8 或点击「下载适配 Java」。"
             : !allowsNewer
                 ? selected.MajorVersion == 8
-                    ? $"{versionId} 属于老版本（1.13 之前），只能用 Java 8（Java 9+ 会启动失败）；当前选择满足要求。"
-                    : $"{versionId} 属于老版本（1.13 之前），只能用 Java 8（Java 9+ 会启动失败）；当前选的是 Java {selected.MajorVersion}，" +
-                      "点「下载适配 Java」会自动装 Java 8。"
+                    ? $"{versionId} 需要 Java 8，当前选择满足要求。"
+                    : $"{versionId} 需要 Java 8，当前选择的是 Java {selected.MajorVersion}。请改用 Java 8。"
                 : selected.MajorVersion == required
-                    ? $"{versionId} 官方要求 Java {required}（读自版本 JSON）；当前选择正好匹配。"
-                    : $"{versionId} 官方要求 Java {required}（读自版本 JSON）；本机没有 Java {required}，" +
-                      $"将用 Java {selected.MajorVersion} 启动（1.13 以后允许用更高的 Java，不必再下一份）。";
+                    ? $"{versionId} 需要 Java {required}，当前选择满足要求。"
+                    : $"{versionId} 需要 Java {required}，当前选择的是 Java {selected.MajorVersion}。";
     }
 
     /// <summary>Java 下拉里的一项：不适用的选项也列出来（允许手动选），只是后面加一句说明。</summary>
@@ -277,11 +277,11 @@ public partial class SettingsPage : UserControl
         var label = $"{java.DisplayName} · {java.JavaPath}";
         if (!allowsNewer && java.MajorVersion != 8)
         {
-            return label + "（该版本必须 Java 8，不适用）";
+            return label + " · 需要 Java 8";
         }
 
         return allowsNewer && java.MajorVersion < required
-            ? label + $"（低于要求的 Java {required}）"
+            ? label + $" · 低于目标 Java {required}"
             : label;
     }
 
@@ -395,7 +395,7 @@ public partial class SettingsPage : UserControl
                     var search = new JavaSearchWindow { Owner = Window.GetWindow(this) };
                     search.ShowDialog();
                     RefreshJavaList();
-                    MaintenanceStatus.Text = $"Java 检测完成，共 {JavaBox.Items.Count} 个可用运行时。";
+                    MaintenanceStatus.Text = $"Java 检测完成，共 {JavaBox.Items.Count} 个可用 Java 版本。";
                     break;
                 }
 

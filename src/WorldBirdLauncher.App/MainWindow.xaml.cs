@@ -100,6 +100,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         // 与「启动器」页共用同一份设置与本地数据
         _settings = _session.Settings;
         _store = _session.Store;
+        ApplyNavigationState(_settings.NavigationCollapsed);
 
         _statusProvider = new ServerStatusProvider(enableQuery: _settings.EnableQuery);
         BuildChips();
@@ -524,7 +525,14 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void OnToggleNav(object sender, RoutedEventArgs e)
     {
-        _navCollapsed = !_navCollapsed;
+        ApplyNavigationState(!_navCollapsed);
+        _settings.NavigationCollapsed = _navCollapsed;
+        _settings.Save();
+    }
+
+    private void ApplyNavigationState(bool collapsed)
+    {
+        _navCollapsed = collapsed;
         NavColumn.Width = new GridLength(_navCollapsed ? 64 : 176);
         var visibility = _navCollapsed ? Visibility.Collapsed : Visibility.Visible;
         NavLaunchText.Visibility = visibility;

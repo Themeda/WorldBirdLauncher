@@ -1,7 +1,7 @@
 <Window x:Class="WorldBirdLauncher.App.Views.JavaSearchWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="检测 Java 运行时" Height="440" Width="560"
+        Title="检测 Java 版本" Height="440" Width="560"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         FontFamily="Source Han Sans SC, Segoe UI, Noto Sans, sans-serif">
@@ -15,7 +15,7 @@
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0" Height="38" Background="Transparent" MouseLeftButtonDown="OnTitleBarDrag">
-                <TextBlock Text="检测 Java 运行时" FontSize="12" VerticalAlignment="Center" Margin="16,0,0,0"
+                <TextBlock Text="检测 Java 版本" FontSize="12" VerticalAlignment="Center" Margin="16,0,0,0"
                            Foreground="{DynamicResource TextSecondaryBrush}" />
             </Grid>
 

@@ -15,6 +15,9 @@
     <SolidColorBrush x:Key="TextPrimaryBrush" Color="#0F172B" />
     <SolidColorBrush x:Key="TextSecondaryBrush" Color="#556180" />
     <SolidColorBrush x:Key="TextMutedBrush" Color="#8395B0" />
+    <SolidColorBrush x:Key="ShellTextPrimaryBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="ShellTextSecondaryBrush" Color="#EAF1FF" />
+    <SolidColorBrush x:Key="ShellTextMutedBrush" Color="#C7D8F2" />
 
     <SolidColorBrush x:Key="AccentBrush" Color="#2B7FFF" />
     <SolidColorBrush x:Key="AccentHoverBrush" Color="#155DFC" />
@@ -158,7 +161,7 @@
     </Style>
 
     <Style x:Key="NavButton" TargetType="RadioButton">
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource ShellTextSecondaryBrush}" />
         <Setter Property="FontSize" Value="13" />
         <Setter Property="Cursor" Value="Hand" />
         <Setter Property="Template">
@@ -529,7 +532,7 @@
     <Style x:Key="TitleBarButton" TargetType="Button">
         <Setter Property="Width" Value="44" />
         <Setter Property="Height" Value="32" />
-        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource ShellTextSecondaryBrush}" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Cursor" Value="Hand" />
