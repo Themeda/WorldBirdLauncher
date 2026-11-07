@@ -81,7 +81,7 @@ public partial class IntegrityCheckWindow : Window
 
             if (report.Issues.Count > 0)
             {
-                AppendLog(new IntegrityLogEntry(IntegrityLogKind.Info, "可在设置页点「安装版本…」重装该版本补全文件。"));
+                AppendLog(new IntegrityLogEntry(IntegrityLogKind.Info, "请用对应安装器补齐该版本的必要文件后重新检查。"));
             }
 
             StatusText.Text = report.IsHealthy ? "检查完成：全部通过" : $"检查完成：{report.Missing} 个缺失、{report.HashMismatch} 个哈希不符";

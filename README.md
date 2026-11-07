@@ -13,11 +13,14 @@ and is licensed under the MIT License.
 - Support local latency testing, favorites, play history, and full-size server-detail images.
 - **Microsoft accounts are the only supported authentication method.** All other account types have been removed.
 - Microsoft login uses the authorization code flow with PKCE through the system browser and an ephemeral loopback callback.
+- Login starts only when the user opens account management; launching the client no longer opens an authorization window automatically.
 - Servers that declare an external account requirement remain visible, but WBL clearly blocks launching them.
 - Support Java detection, version isolation, integrity checks, game launching, and direct server join.
-- Support installing Fabric, Quilt, Forge, NeoForge, and OptiFine.
+- Detect and launch locally installed Fabric, Quilt, Forge, NeoForge, OptiFine, and vanilla versions.
 - Support modpack imports, mod search and downloads, and a resource download queue.
 - Support light, dark, and system-following themes, plus multiple accounts.
+- Support a collapsible icon-only navigation rail, grouped settings tabs, and a custom accent color.
+- Game versions must already be installed locally; standalone game-version installation has been removed.
 
 ## Requirements
 

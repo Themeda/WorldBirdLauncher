@@ -34,7 +34,7 @@
 
             <Grid Grid.Row="1">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="176" />
+                    <ColumnDefinition x:Name="NavColumn" Width="176" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
@@ -43,19 +43,52 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" />
                         <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
                     </Grid.RowDefinitions>
                     <StackPanel Grid.Row="0" Margin="0,6,0,0">
-                        <RadioButton x:Name="NavLaunch" Content="启动" Style="{StaticResource NavButton}"
-                                     GroupName="Nav" IsChecked="True" Checked="OnNavChanged" />
-                        <RadioButton x:Name="NavServers" Content="服务器列表" Style="{StaticResource NavButton}"
-                                     GroupName="Nav" Checked="OnNavChanged" />
-                        <RadioButton x:Name="NavSkin" Content="皮肤展示" Style="{StaticResource NavButton}"
-                                     GroupName="Nav" Checked="OnNavChanged" />
-                        <RadioButton x:Name="NavDownload" Content="资源下载" Style="{StaticResource NavButton}"
-                                     GroupName="Nav" Checked="OnNavChanged" />
+                        <RadioButton x:Name="NavLaunch" Style="{StaticResource NavButton}" ToolTip="启动"
+                                     GroupName="Nav" IsChecked="True" Checked="OnNavChanged">
+                            <Grid Height="20">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <TextBlock Text="▶" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <TextBlock x:Name="NavLaunchText" Grid.Column="1" Text="启动" Margin="8,0,0,0" VerticalAlignment="Center" />
+                            </Grid>
+                        </RadioButton>
+                        <RadioButton x:Name="NavServers" Style="{StaticResource NavButton}" ToolTip="服务器列表"
+                                     GroupName="Nav" Checked="OnNavChanged">
+                            <Grid Height="20">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <TextBlock Text="☷" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <TextBlock x:Name="NavServersText" Grid.Column="1" Text="服务器列表" Margin="8,0,0,0" VerticalAlignment="Center" />
+                            </Grid>
+                        </RadioButton>
+                        <RadioButton x:Name="NavSkin" Style="{StaticResource NavButton}" ToolTip="皮肤展示"
+                                     GroupName="Nav" Checked="OnNavChanged">
+                            <Grid Height="20">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <TextBlock Text="☻" FontSize="14" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <TextBlock x:Name="NavSkinText" Grid.Column="1" Text="皮肤展示" Margin="8,0,0,0" VerticalAlignment="Center" />
+                            </Grid>
+                        </RadioButton>
+                        <RadioButton x:Name="NavDownload" Style="{StaticResource NavButton}" ToolTip="资源下载"
+                                     GroupName="Nav" Checked="OnNavChanged">
+                            <Grid Height="20">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                <TextBlock Text="⇩" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                <TextBlock x:Name="NavDownloadText" Grid.Column="1" Text="资源下载" Margin="8,0,0,0" VerticalAlignment="Center" />
+                            </Grid>
+                        </RadioButton>
                     </StackPanel>
-                    <RadioButton x:Name="NavSettings" Grid.Row="1" Content="设置" Style="{StaticResource NavButton}"
-                                 GroupName="Nav" Margin="0,0,0,8" Checked="OnNavChanged" />
+                    <RadioButton x:Name="NavSettings" Grid.Row="1" Style="{StaticResource NavButton}" ToolTip="设置"
+                                 GroupName="Nav" Margin="0,0,0,2" Checked="OnNavChanged">
+                        <Grid Height="20">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="24" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                            <TextBlock Text="⚙" FontSize="15" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <TextBlock x:Name="NavSettingsText" Grid.Column="1" Text="设置" Margin="8,0,0,0" VerticalAlignment="Center" />
+                        </Grid>
+                    </RadioButton>
+                    <Button x:Name="NavCollapseButton" Grid.Row="2" Content="« 收起" Style="{StaticResource GhostButton}"
+                            Height="30" Margin="8,2,8,10" Padding="6,0" Click="OnToggleNav" ToolTip="收起导航栏" />
                 </Grid>
 
                 <!-- 内容区 -->
@@ -71,8 +104,8 @@
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
-                                                <WrapPanel Grid.Row="0" Margin="0,0,0,10" VerticalAlignment="Center">
-                            <ComboBox x:Name="SortBox" Width="104" Height="30" Margin="0,0,8,6"
+                                                <WrapPanel Grid.Row="0" Margin="0,0,0,8" VerticalAlignment="Center">
+                            <ComboBox x:Name="SortBox" Width="112" Height="30" Margin="0,0,8,0" VerticalAlignment="Center"
                                       SelectionChanged="OnSortChanged">
                                 <ComboBoxItem Content="按在线人数" IsSelected="True" />
                                 <ComboBoxItem Content="按信号" />
@@ -80,7 +113,7 @@
                                 <ComboBoxItem Content="按综合热度" />
                                 <ComboBoxItem Content="收藏优先" />
                             </ComboBox>
-                            <TextBox x:Name="SearchBox" Width="160" Height="30" Margin="0,0,8,6"
+                            <TextBox x:Name="SearchBox" Width="176" Height="30" Margin="0,0,8,0" VerticalAlignment="Center"
                                      TextChanged="OnSearchChanged"
                                      ToolTip="按名称、地址、介绍或已知模组搜索" />
                             <Button x:Name="VersionButton" Content="版本 ˅" Style="{StaticResource CompactChipButton}"
@@ -109,7 +142,7 @@
                                     </StackPanel>
                                 </Border>
                             </Popup>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,6">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
                                 <TextBlock Text="专属" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center"
                                            ToolTip="专属客户端"
                                            Foreground="{DynamicResource TextMutedBrush}" />
@@ -125,7 +158,7 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,6">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
                                 <TextBlock Text="白名单" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextMutedBrush}" />
                                 <ItemsControl ItemsSource="{Binding WhitelistChips}">
@@ -140,7 +173,7 @@
                                     </ItemsControl.ItemTemplate>
                                 </ItemsControl>
                             </StackPanel>
-                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,6">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
                                 <TextBlock Text="正版" FontSize="11" Margin="0,0,4,0" VerticalAlignment="Center"
                                            ToolTip="正版验证"
                                            Foreground="{DynamicResource TextMutedBrush}" />
@@ -157,10 +190,10 @@
                                 </ItemsControl>
                             </StackPanel>
                             <Button x:Name="FilterDrawerButton" Content="筛选 ˅" Style="{StaticResource CompactChipButton}"
-                                    Click="OnToggleFilterDrawer" />
+                                    VerticalAlignment="Center" Click="OnToggleFilterDrawer" />
                             <Button x:Name="RefreshStatusButton" Content="刷新状态" Style="{StaticResource GhostButton}"
-                                    Height="30" Padding="12,4" Margin="0,0,6,6" Click="OnRefreshStatus" />
-                            <ProgressBar x:Name="RefreshProgress" Width="60" Height="5" Margin="0,0,0,6"
+                                    Height="30" Padding="12,4" Margin="0,0,6,0" Click="OnRefreshStatus" />
+                            <ProgressBar x:Name="RefreshProgress" Width="60" Height="5" Margin="0,0,0,0"
                                          VerticalAlignment="Center" IsIndeterminate="True" Visibility="Collapsed" />
                         </WrapPanel>
                         <ScrollViewer x:Name="ServerListScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto"

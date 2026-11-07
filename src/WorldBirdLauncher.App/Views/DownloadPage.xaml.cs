@@ -68,12 +68,6 @@ public partial class DownloadPage : UserControl
         }
     }
 
-    private void OnInstallGame(object sender, RoutedEventArgs e)
-    {
-        new InstallVersionWindow { Owner = Window.GetWindow(this) }.ShowDialog();
-        StatusText.Text = "安装任务已在后台执行，可在下方任务列表查看进度。";
-    }
-
     private void OnDownloadMods(object sender, RoutedEventArgs e)
     {
         new ModDownloadWindow { Owner = Window.GetWindow(this) }.ShowDialog();

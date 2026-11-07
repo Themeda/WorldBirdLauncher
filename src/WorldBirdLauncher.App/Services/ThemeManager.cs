@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Media;
+using System.Globalization;
 using Microsoft.Win32;
 
 namespace WorldBirdLauncher.App.Services;
@@ -19,6 +20,7 @@ internal static class ThemeManager
     public const string Light = "light";
     public const string Dark = "dark";
     public const string System = "system";
+    public const string DefaultAccent = "#2B7FFF";
 
     /// <summary>浅色（默认）——偏蓝的冷色调，和 Theme.xaml 里的默认值保持一致。</summary>
     private static readonly Dictionary<string, string> LightPalette = new(StringComparer.Ordinal)
@@ -70,7 +72,7 @@ internal static class ThemeManager
     public static string Applied { get; private set; } = Light;
 
     /// <summary>把设置里的主题值（light / dark / system）应用成实际配色。</summary>
-    public static void Apply(string? mode)
+    public static void Apply(string? mode, string? accentColor = null)
     {
         var effective = Resolve(mode);
         Applied = effective;
@@ -81,10 +83,23 @@ internal static class ThemeManager
             return;
         }
 
-        var palette = effective == Dark ? DarkPalette : LightPalette;
+        var palette = new Dictionary<string, string>(
+            effective == Dark ? DarkPalette : LightPalette,
+            StringComparer.Ordinal);
+        var accent = ParseAccent(accentColor);
+        var surface = ParseColor(palette["SurfaceBrush"]);
+        var white = Color.FromRgb(255, 255, 255);
+        palette["AccentBrush"] = ToHex(accent);
+        palette["AccentHoverBrush"] = ToHex(effective == Dark
+            ? Blend(accent, white, 0.18)
+            : Blend(accent, Color.FromRgb(0, 0, 0), 0.16));
+        palette["AccentSoftBrush"] = ToHex(Blend(accent, surface, 0.84));
+        palette["AccentSoftHoverBrush"] = ToHex(Blend(accent, surface, 0.74));
+        palette["AccentDisabledBrush"] = ToHex(Blend(accent, surface, 0.62));
+
         foreach (var (key, hex) in palette)
         {
-            var color = (Color)ColorConverter.ConvertFromString(hex);
+            var color = ParseColor(hex);
             var brush = new SolidColorBrush(color);
             brush.Freeze();
             app.Resources[key] = brush; // DynamicResource 会自动跟着刷新
@@ -98,6 +113,42 @@ internal static class ThemeManager
         System => IsSystemDark() ? Dark : Light,
         _ => Light,
     };
+
+    public static bool TryNormalizeAccent(string? value, out string normalized)
+    {
+        normalized = DefaultAccent;
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        var hex = (value ?? string.Empty).Trim().TrimStart('#');
+        if (hex.Length != 6 || !int.TryParse(hex, NumberStyles.HexNumber,
+                CultureInfo.InvariantCulture, out _))
+        {
+            return false;
+        }
+
+        normalized = "#" + hex.ToUpperInvariant();
+        return true;
+    }
+
+    private static Color ParseAccent(string? value) =>
+        ParseColor(TryNormalizeAccent(value, out var normalized) ? normalized : DefaultAccent);
+
+    private static Color ParseColor(string value) =>
+        (Color)ColorConverter.ConvertFromString(value);
+
+    private static Color Blend(Color from, Color to, double amount)
+    {
+        var weight = Math.Max(0, Math.Min(1, amount));
+        return Color.FromRgb(
+            (byte)Math.Round(from.R * (1 - weight) + to.R * weight),
+            (byte)Math.Round(from.G * (1 - weight) + to.G * weight),
+            (byte)Math.Round(from.B * (1 - weight) + to.B * weight));
+    }
+
+    private static string ToHex(Color color) => $"#{color.R:X2}{color.G:X2}{color.B:X2}";
 
     /// <summary>Windows「个性化 → 颜色 → 选择默认应用模式」；读不到时按浅色。</summary>
     private static bool IsSystemDark()

@@ -48,6 +48,9 @@ public sealed class AppSettings
     /// <summary>界面主题：light（浅色）/ dark（深色）/ system（跟随系统）。</summary>
     public string ThemeMode { get; set; } = "light";
 
+    /// <summary>自定义强调色（#RRGGBB），用于按钮、选中态与高亮。</summary>
+    public string AccentColor { get; set; } = "#2B7FFF";
+
     /// <summary>上次使用的账户名。</summary>
     public string? LastAccountName { get; set; }
 

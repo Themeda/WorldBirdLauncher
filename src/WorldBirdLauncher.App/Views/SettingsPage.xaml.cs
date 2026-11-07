@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using WorldBirdLauncher.App.Services;
 using WorldBirdLauncher.Core.Launcher;
 namespace WorldBirdLauncher.App.Views;
@@ -41,6 +42,11 @@ public partial class SettingsPage : UserControl
             ThemeManager.System => 2,
             _ => 0,
         };
+        AccentColorBox.Text = ThemeManager.TryNormalizeAccent(_session.Settings.AccentColor, out var accent)
+            ? accent
+            : ThemeManager.DefaultAccent;
+        AccentPreview.Background = new SolidColorBrush(
+            (Color)ColorConverter.ConvertFromString(AccentColorBox.Text));
         _suppressTheme = false;
         _suppressPick = false;
 
@@ -49,7 +55,7 @@ public partial class SettingsPage : UserControl
         RefreshCatalogStatus();
     }
 
-    /// <summary>主题切换：立即生效并立刻写回设置（不必等点「保存设置」）。</summary>
+    /// <summary>Theme changes preview immediately and persist with the floating save button.</summary>
     private void OnThemeChanged(object sender, SelectionChangedEventArgs e)
     {
         if (_suppressTheme || ThemeBox is null)
@@ -63,8 +69,38 @@ public partial class SettingsPage : UserControl
             2 => ThemeManager.System,
             _ => ThemeManager.Light,
         };
-        _session.Settings.Save();
-        ThemeManager.Apply(_session.Settings.ThemeMode);
+        var accent = ThemeManager.TryNormalizeAccent(AccentColorBox.Text, out var normalized)
+            ? normalized
+            : _session.Settings.AccentColor;
+        ThemeManager.Apply(_session.Settings.ThemeMode, accent);
+        SaveStatus.Text = "主题已预览，点「保存设置」后保留";
+    }
+
+    private void OnAccentColorChanged(object sender, TextChangedEventArgs e)
+    {
+        if (_suppressTheme || AccentPreview is null)
+        {
+            return;
+        }
+
+        if (!ThemeManager.TryNormalizeAccent(AccentColorBox.Text, out var normalized))
+        {
+            SaveStatus.Text = "主题颜色格式应为 #RRGGBB";
+            return;
+        }
+
+        AccentPreview.Background = new SolidColorBrush(
+            (Color)ColorConverter.ConvertFromString(normalized));
+        ThemeManager.Apply(_session.Settings.ThemeMode, normalized);
+        SaveStatus.Text = "颜色已预览，点「保存设置」后保留";
+    }
+
+    private void OnAccentPreset(object sender, RoutedEventArgs e)
+    {
+        if ((sender as FrameworkElement)?.Tag is string value)
+        {
+            AccentColorBox.Text = value;
+        }
     }
 
     /// <summary>显示服务端地址（只读）、当前数据版本与上次更新时间。</summary>
@@ -167,7 +203,7 @@ public partial class SettingsPage : UserControl
         IncompleteVersionsText.Text =
             $"检测到 {broken.Count} 个不完整的版本目录（缺少版本 JSON，无法启动，也不会出现在版本列表里）：" +
             string.Join("、", broken.Select(v => v.Id)) +
-            "。如果是手动放进去的 OptiFine 安装器，请用「安装版本…」重新安装光影。";
+            "。请用对应的加载器安装器补齐版本 JSON，或重新导入自带完整版本的整合包。";
         IncompleteVersionsText.Visibility = Visibility.Visible;
     }
 
@@ -268,7 +304,7 @@ public partial class SettingsPage : UserControl
 
         _busy = true;
         // 打开子窗口的操作不在设置页显示进度条（子窗口自己显示），其余维护操作才显示
-        var usesSubWindow = action is "install" or "mods" or "javadetect" or "javadownload" or "verify";
+        var usesSubWindow = action is "mods" or "javadetect" or "javadownload" or "verify";
         MaintenanceProgress.Visibility = usesSubWindow ? Visibility.Collapsed : Visibility.Visible;
         try
         {
@@ -276,7 +312,7 @@ public partial class SettingsPage : UserControl
             {
                 case "refresh":
                 {
-                    // 按需求：设置页只列已安装版本（远程列表在「安装版本…」弹窗里）
+                    // 设置页只列出本机已安装版本。
                     var installed = _session.Installation.GetInstalledVersions(_session.GameRoot);
                     _suppressPick = true;
                     VersionBox.ItemsSource = installed.Select(v => v.Id).ToList();
@@ -286,25 +322,7 @@ public partial class SettingsPage : UserControl
                         : installed.FirstOrDefault()?.Id;
                     _suppressPick = false;
                     MaintenanceStatus.Text =
-                        $"已刷新：本机已安装 {installed.Count} 个版本（安装新版本请点「安装版本…」）。";
-                    break;
-                }
-
-                case "install":
-                {
-                    // 弹窗里选版本 + 选加载器（原版 / Forge / Fabric）
-                    _busy = false; // 弹窗自己管理忙碌状态，避免遮住它
-                    var dialog = new InstallVersionWindow { Owner = Window.GetWindow(this) };
-                    dialog.ShowDialog();
-                    MaintenanceStatus.Text = dialog.InstalledVersionId is { } installed
-                        ? $"已安装：{installed}"
-                        : "已关闭安装窗口。";
-                    if (dialog.InstalledVersionId is { } id)
-                    {
-                        _session.CurrentVersionId = id;
-                    }
-
-                    RefreshVersionList();
+                        $"已刷新：本机已安装 {installed.Count} 个版本。";
                     break;
                 }
 
@@ -429,6 +447,12 @@ public partial class SettingsPage : UserControl
             return;
         }
 
+        if (!ThemeManager.TryNormalizeAccent(AccentColorBox.Text, out var accent))
+        {
+            SaveStatus.Text = "主题颜色格式应为 #RRGGBB";
+            return;
+        }
+
         if (!int.TryParse(MemoryBox.Text.Trim(), out var memory) || memory < 512)
         {
             memory = 4096;
@@ -445,7 +469,15 @@ public partial class SettingsPage : UserControl
         _session.Settings.TrayOnClose = TrayOnCloseBox.IsChecked == true;
         _session.Settings.DefaultServerAddress =
             string.IsNullOrWhiteSpace(ServerAddressBox.Text) ? null : ServerAddressBox.Text.Trim();
+        _session.Settings.AccentColor = accent;
+        _session.Settings.ThemeMode = ThemeBox.SelectedIndex switch
+        {
+            1 => ThemeManager.Dark,
+            2 => ThemeManager.System,
+            _ => ThemeManager.Light,
+        };
         _session.Settings.Save();
+        ThemeManager.Apply(_session.Settings.ThemeMode, accent);
         _session.Installation.SetDownloadSource(_session.Settings.UseMirror);
 
         SaveStatus.Text = "已保存";

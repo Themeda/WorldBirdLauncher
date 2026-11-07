@@ -3,165 +3,260 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              FontFamily="Microsoft YaHei UI, Segoe UI">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="Auto" />
-        </Grid.ColumnDefinitions>
-    <ScrollViewer Grid.Column="0" VerticalScrollBarVisibility="Auto">
-        <StackPanel MaxWidth="720" HorizontalAlignment="Left">
+        <TabControl x:Name="SettingsTabs" Margin="0,0,0,58" Background="Transparent"
+                    BorderThickness="0">
+            <TabItem Header="外观">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="0,10,0,0">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="界面主题" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Text="选择浅色、深色或跟随系统；切换后立即预览。"
+                                           FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextMutedBrush}" />
+                                <ComboBox x:Name="ThemeBox" Height="32" Margin="0,10,0,0" MaxWidth="220"
+                                          HorizontalAlignment="Left" SelectionChanged="OnThemeChanged">
+                                    <ComboBoxItem Content="浅色" />
+                                    <ComboBoxItem Content="深色" />
+                                    <ComboBoxItem Content="跟随系统" />
+                                </ComboBox>
+                            </StackPanel>
+                        </Border>
 
-            <Border Style="{StaticResource Card}">
-                <StackPanel>
-                    <TextBlock Text="游戏目录" FontSize="14" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text=".minecraft 所在目录，留空则自动探测" FontSize="11" Margin="0,3,0,0"
-                               Foreground="{DynamicResource TextMutedBrush}" />
-                    <Grid Margin="0,8,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <TextBox x:Name="GameDirBox" Height="32" />
-                        <Button Grid.Column="1" Content="浏览…" Style="{StaticResource GhostButton}"
-                                Margin="8,0,0,0" Click="OnBrowseGameDir" />
-                    </Grid>
-                </StackPanel>
-            </Border>
+                        <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                            <StackPanel>
+                                <TextBlock Text="主题颜色" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Text="自定义强调色会应用到按钮、选中态、链接与高亮。输入 #RRGGBB，或选择下面的常用颜色。"
+                                           FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextMutedBrush}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                    <Border x:Name="AccentPreview" Width="34" Height="34" CornerRadius="8"
+                                            Background="{DynamicResource AccentBrush}"
+                                            BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1" />
+                                    <TextBox x:Name="AccentColorBox" Width="150" Height="34" Margin="10,0,0,0"
+                                             TextChanged="OnAccentColorChanged" ToolTip="例如 #2B7FFF" />
+                                    <TextBlock Text="例如 #2B7FFF" FontSize="11" Margin="10,0,0,0"
+                                               VerticalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" />
+                                </StackPanel>
+                                <WrapPanel Margin="0,12,0,0">
+                                    <Button Tag="#2B7FFF" Style="{StaticResource GhostButton}" Padding="8"
+                                            Margin="0,0,8,8" Click="OnAccentPreset" ToolTip="品牌蓝">
+                                        <Border Width="18" Height="18" CornerRadius="4" Background="#2B7FFF" />
+                                    </Button>
+                                    <Button Tag="#7C3AED" Style="{StaticResource GhostButton}" Padding="8"
+                                            Margin="0,0,8,8" Click="OnAccentPreset" ToolTip="紫罗兰">
+                                        <Border Width="18" Height="18" CornerRadius="4" Background="#7C3AED" />
+                                    </Button>
+                                    <Button Tag="#0F766E" Style="{StaticResource GhostButton}" Padding="8"
+                                            Margin="0,0,8,8" Click="OnAccentPreset" ToolTip="青绿">
+                                        <Border Width="18" Height="18" CornerRadius="4" Background="#0F766E" />
+                                    </Button>
+                                    <Button Tag="#DB2777" Style="{StaticResource GhostButton}" Padding="8"
+                                            Margin="0,0,8,8" Click="OnAccentPreset" ToolTip="玫红">
+                                        <Border Width="18" Height="18" CornerRadius="4" Background="#DB2777" />
+                                    </Button>
+                                    <Button Tag="#DC2626" Style="{StaticResource GhostButton}" Padding="8"
+                                            Margin="0,0,8,8" Click="OnAccentPreset" ToolTip="红色">
+                                        <Border Width="18" Height="18" CornerRadius="4" Background="#DC2626" />
+                                    </Button>
+                                    <Button Tag="#EA580C" Style="{StaticResource GhostButton}" Padding="8"
+                                            Margin="0,0,8,8" Click="OnAccentPreset" ToolTip="橙色">
+                                        <Border Width="18" Height="18" CornerRadius="4" Background="#EA580C" />
+                                    </Button>
+                                </WrapPanel>
+                            </StackPanel>
+                        </Border>
 
-            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
-                <StackPanel>
-                    <TextBlock Text="下载与数据源" FontSize="14" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <CheckBox x:Name="MirrorBox" Content="使用 BMCLAPI 镜像下载游戏与 Java（国内推荐）"
-                              Margin="0,10,0,0" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
-                    <CheckBox x:Name="QueryBox" Content="启用 Query 协议补充查询（服务端未开启时自动跳过）"
-                              Margin="0,8,0,0" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <TextBlock Text="状态缓存时长（秒）" FontSize="12" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBox x:Name="CacheBox" Width="80" Height="30" Margin="10,0,0,0" />
+                        <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                            <StackPanel>
+                                <TextBlock Text="窗口与托盘" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Text="启动游戏后可以把窗口收进系统托盘，游戏退出时再自动显示回来。"
+                                           FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextMutedBrush}" />
+                                <CheckBox x:Name="TrayAfterLaunchBox" Content="启动游戏后最小化到托盘（游戏退出后自动显示）"
+                                          Margin="0,10,0,0" FontSize="12"
+                                          Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <CheckBox x:Name="TrayOnCloseBox" Content="点击关闭按钮时最小化到托盘而非退出（只有托盘菜单能真正退出）"
+                                          Margin="0,8,0,0" FontSize="12"
+                                          Foreground="{DynamicResource TextSecondaryBrush}" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
-                </StackPanel>
-            </Border>
+                </ScrollViewer>
+            </TabItem>
 
-            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
-                <StackPanel>
-                    <TextBlock Text="版本与运行时维护" FontSize="14" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="这些操作作用于启动页当前选中的版本" FontSize="11" Margin="0,4,0,0"
-                               Foreground="{DynamicResource TextMutedBrush}" />
-                    <TextBlock Text="游戏版本" FontSize="11" Margin="0,10,0,4"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                    <ComboBox x:Name="VersionBox" Height="32" SelectionChanged="OnVersionPicked" />
-                    <TextBlock x:Name="IncompleteVersionsText" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"
-                               Visibility="Collapsed" Foreground="#B7791F" />
-                    <TextBlock Text="Java 版本" FontSize="11" Margin="0,10,0,4"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                    <ComboBox x:Name="JavaBox" Height="32" SelectionChanged="OnJavaPicked" />
-                    <TextBlock x:Name="JavaHintText" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"
-                               Foreground="{DynamicResource TextMutedBrush}" />
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <TextBlock Text="内存(MB)" FontSize="11" VerticalAlignment="Center"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <TextBox x:Name="MemoryBox" Width="80" Height="30" Margin="8,0,0,0"
-                                 TextChanged="OnMemoryTextChanged" />
-                        <CheckBox x:Name="IsolationBox" Content="版本隔离" FontSize="11" Margin="12,0,0,0"
-                                  VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" />
-                        <CheckBox x:Name="AutoMemoryBox" Content="自动按物理内存推荐" FontSize="11" Margin="12,0,0,0"
-                                  VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" />
+            <TabItem Header="启动与 Java">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="0,10,0,0">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="游戏目录" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Text=".minecraft 所在目录，留空则自动探测"
+                                           FontSize="11" Margin="0,3,0,0"
+                                           Foreground="{DynamicResource TextMutedBrush}" />
+                                <Grid Margin="0,8,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <TextBox x:Name="GameDirBox" Height="32" />
+                                    <Button Grid.Column="1" Content="浏览…" Style="{StaticResource GhostButton}"
+                                            Margin="8,0,0,0" Click="OnBrowseGameDir" />
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                            <StackPanel>
+                                <TextBlock Text="版本与运行时" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Text="从本机已有版本中选择；此页面不再提供游戏版本安装。"
+                                           FontSize="11" Margin="0,4,0,0"
+                                           Foreground="{DynamicResource TextMutedBrush}" />
+                                <TextBlock Text="游戏版本" FontSize="11" Margin="0,10,0,4"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <ComboBox x:Name="VersionBox" Height="32" SelectionChanged="OnVersionPicked" />
+                                <TextBlock x:Name="IncompleteVersionsText" FontSize="11" Margin="0,6,0,0"
+                                           TextWrapping="Wrap" Visibility="Collapsed"
+                                           Foreground="{DynamicResource WarningBrush}" />
+                                <TextBlock Text="Java 版本" FontSize="11" Margin="0,10,0,4"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <ComboBox x:Name="JavaBox" Height="32" SelectionChanged="OnJavaPicked" />
+                                <TextBlock x:Name="JavaHintText" FontSize="11" Margin="0,6,0,0"
+                                           TextWrapping="Wrap" Foreground="{DynamicResource TextMutedBrush}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <TextBlock Text="内存(MB)" FontSize="11" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <TextBox x:Name="MemoryBox" Width="80" Height="30" Margin="8,0,0,0"
+                                             TextChanged="OnMemoryTextChanged" />
+                                    <CheckBox x:Name="IsolationBox" Content="版本隔离" FontSize="11"
+                                              Margin="12,0,0,0" VerticalAlignment="Center"
+                                              Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <CheckBox x:Name="AutoMemoryBox" Content="自动按物理内存推荐" FontSize="11"
+                                              Margin="12,0,0,0" VerticalAlignment="Center"
+                                              Foreground="{DynamicResource TextSecondaryBrush}" />
+                                </StackPanel>
+                                <Slider x:Name="MemorySlider" Minimum="128" Maximum="32768" Value="4096"
+                                        TickFrequency="128" IsSnapToTickEnabled="True" SmallChange="128"
+                                        LargeChange="512" Margin="0,4,0,0" ValueChanged="OnMemorySliderChanged" />
+                                <TextBlock x:Name="MemoryRangeText" FontSize="10" Margin="0,2,0,0"
+                                           Foreground="{DynamicResource TextMutedBrush}" />
+                                <TextBlock Text="启动后自动进入的服务器（可选，格式 ip 或 ip:端口）"
+                                           FontSize="11" Margin="0,10,0,4"
+                                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <TextBox x:Name="ServerAddressBox" Height="30" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
-                    <Slider x:Name="MemorySlider" Minimum="128" Maximum="32768" Value="4096"
-                            TickFrequency="128" IsSnapToTickEnabled="True" SmallChange="128" LargeChange="512"
-                            Margin="0,4,0,0" ValueChanged="OnMemorySliderChanged" />
-                    <TextBlock x:Name="MemoryRangeText" FontSize="10" Margin="0,2,0,0"
-                               Foreground="{DynamicResource TextMutedBrush}" />
-                    <TextBlock Text="启动后自动进入的服务器（可选，格式 ip 或 ip:端口）" FontSize="11" Margin="0,10,0,4"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                    <TextBox x:Name="ServerAddressBox" Height="30" />
-                    <WrapPanel Margin="0,10,0,0">
-                        <Button Content="刷新版本列表" Style="{StaticResource GhostButton}" Margin="0,0,8,8"
-                                Click="OnMaintenance" Tag="refresh" />
-                        <Button Content="导入整合包" Style="{StaticResource GhostButton}" Margin="0,0,8,8"
-                                Click="OnMaintenance" Tag="modpack" />
-                        <Button Content="检测 Java" Style="{StaticResource GhostButton}" Margin="0,0,8,8"
-                                Click="OnMaintenance" Tag="javadetect" />
-                        <Button Content="下载适配 Java" Style="{StaticResource GhostButton}" Margin="0,0,8,8"
-                                Click="OnMaintenance" Tag="javadownload" />
-                        <Button Content="打开游戏目录" Style="{StaticResource GhostButton}" Margin="0,0,8,8"
-                                Click="OnMaintenance" Tag="openfolder" />
-                        <Button Content="检查完整性" Style="{StaticResource GhostButton}" Margin="0,0,8,8"
-                                Click="OnMaintenance" Tag="verify" />
-                    </WrapPanel>
-                    <TextBlock x:Name="MaintenanceStatus" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
-                               Foreground="{DynamicResource TextMutedBrush}" />
-                    <ProgressBar x:Name="MaintenanceProgress" Height="4" Margin="0,8,0,0" IsIndeterminate="True"
-                                 Visibility="Collapsed" />
-                </StackPanel>
-            </Border>
+                </ScrollViewer>
+            </TabItem>
 
-            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
-                <StackPanel>
-                    <TextBlock Text="服务器列表数据" FontSize="14" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
-                        <Button Content="立即刷新" Style="{StaticResource PrimaryButton}"
-                                Click="OnRefreshCatalog" />
-                        <Button Content="提交服务器" Style="{StaticResource GhostButton}" Margin="8,0,0,0"
-                                Click="OnSubmitServer" />
+            <TabItem Header="下载与网络">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="0,10,0,0">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="下载与数据源" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <CheckBox x:Name="MirrorBox" Content="使用 BMCLAPI 镜像下载资源与 Java（国内推荐）"
+                                          Margin="0,10,0,0" FontSize="12"
+                                          Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <CheckBox x:Name="QueryBox" Content="启用 Query 协议补充查询（服务端未开启时自动跳过）"
+                                          Margin="0,8,0,0" FontSize="12"
+                                          Foreground="{DynamicResource TextSecondaryBrush}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <TextBlock Text="状态缓存时长（秒）" FontSize="12" VerticalAlignment="Center"
+                                               Foreground="{DynamicResource TextSecondaryBrush}" />
+                                    <TextBox x:Name="CacheBox" Width="80" Height="30" Margin="10,0,0,0" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Border>
+
+                        <Border Style="{StaticResource Card}" Margin="0,12,0,0">
+                            <StackPanel>
+                                <TextBlock Text="服务器列表数据" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                    <Button Content="立即刷新" Style="{StaticResource PrimaryButton}"
+                                            Click="OnRefreshCatalog" />
+                                    <Button Content="提交服务器" Style="{StaticResource GhostButton}" Margin="8,0,0,0"
+                                            Click="OnSubmitServer" />
+                                </StackPanel>
+                                <TextBlock x:Name="CatalogStatus" FontSize="11" Margin="0,8,0,0"
+                                           TextWrapping="Wrap" Foreground="{DynamicResource TextMutedBrush}" />
+                            </StackPanel>
+                        </Border>
                     </StackPanel>
-                    <TextBlock x:Name="CatalogStatus" FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap"
-                               Foreground="{DynamicResource TextMutedBrush}" />
-                </StackPanel>
-            </Border>
+                </ScrollViewer>
+            </TabItem>
 
-            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
-                <StackPanel>
-                    <TextBlock Text="界面主题" FontSize="14" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="浅色偏蓝的冷色调；深色适合夜间。切换后立即生效，并记住你的选择。"
-                               FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
-                               Foreground="{DynamicResource TextMutedBrush}" />
-                    <ComboBox x:Name="ThemeBox" Height="32" Margin="0,10,0,0" MaxWidth="220"
-                              HorizontalAlignment="Left" SelectionChanged="OnThemeChanged">
-                        <ComboBoxItem Content="浅色" />
-                        <ComboBoxItem Content="深色" />
-                        <ComboBoxItem Content="跟随系统" />
-                    </ComboBox>
-                </StackPanel>
-            </Border>
+            <TabItem Header="维护">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="0,10,0,0">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="本地维护" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Text="这些操作作用于启动页当前选中的版本；游戏本体请使用官方启动器或其他来源安装。"
+                                           FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextMutedBrush}" />
+                                <WrapPanel Margin="0,12,0,0">
+                                    <Button Content="刷新已安装版本" Style="{StaticResource GhostButton}"
+                                            Margin="0,0,8,8" Click="OnMaintenance" Tag="refresh" />
+                                    <Button Content="导入整合包" Style="{StaticResource GhostButton}"
+                                            Margin="0,0,8,8" Click="OnMaintenance" Tag="modpack" />
+                                    <Button Content="检测 Java" Style="{StaticResource GhostButton}"
+                                            Margin="0,0,8,8" Click="OnMaintenance" Tag="javadetect" />
+                                    <Button Content="下载适配 Java" Style="{StaticResource GhostButton}"
+                                            Margin="0,0,8,8" Click="OnMaintenance" Tag="javadownload" />
+                                    <Button Content="打开游戏目录" Style="{StaticResource GhostButton}"
+                                            Margin="0,0,8,8" Click="OnMaintenance" Tag="openfolder" />
+                                    <Button Content="检查完整性" Style="{StaticResource GhostButton}"
+                                            Margin="0,0,8,8" Click="OnMaintenance" Tag="verify" />
+                                </WrapPanel>
+                                <TextBlock x:Name="MaintenanceStatus" FontSize="11" Margin="0,4,0,0"
+                                           TextWrapping="Wrap" Foreground="{DynamicResource TextMutedBrush}" />
+                                <ProgressBar x:Name="MaintenanceProgress" Height="4" Margin="0,8,0,0"
+                                             IsIndeterminate="True" Visibility="Collapsed" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
 
-            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
-                <StackPanel>
-                    <TextBlock Text="窗口与托盘" FontSize="14" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Text="启动游戏后可以把窗口收进系统托盘，游戏退出时再自动显示回来。"
-                               FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
-                               Foreground="{DynamicResource TextMutedBrush}" />
-                    <CheckBox x:Name="TrayAfterLaunchBox" Content="启动游戏后最小化到托盘（游戏退出后自动显示）"
-                              Margin="0,10,0,0" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
-                    <CheckBox x:Name="TrayOnCloseBox" Content="点击关闭按钮时最小化到托盘而非退出（只有托盘菜单能真正退出）"
-                              Margin="0,8,0,0" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" />
-                </StackPanel>
-            </Border>
+            <TabItem Header="关于">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="0,10,0,0">
+                        <Border Style="{StaticResource Card}">
+                            <StackPanel>
+                                <TextBlock Text="关于 WorldBirdLauncher" FontSize="14" FontWeight="SemiBold"
+                                           Foreground="{DynamicResource TextPrimaryBrush}" />
+                                <TextBlock Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
+                                           Text="账户信息经 Windows DPAPI 加密保存，不会明文落盘。" />
+                            </StackPanel>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
 
-            <Border Style="{StaticResource Card}" Margin="0,12,0,0">
-                <StackPanel>
-                    <TextBlock Text="关于" FontSize="14" FontWeight="SemiBold"
-                               Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock Margin="0,8,0,0" FontSize="12" TextWrapping="Wrap"
-                               Foreground="{DynamicResource TextSecondaryBrush}"
-                               Text="账户信息经 Windows DPAPI 加密保存，不会明文落盘。" />
-                </StackPanel>
-            </Border>
-
-        </StackPanel>
-    </ScrollViewer>
-
-        <!-- 保存按钮固定在右侧：不随内容滚动，页面任意位置都能点到 -->
-        <StackPanel Grid.Column="1" VerticalAlignment="Top" Margin="16,4,4,0">
-            <Button Content="保存设置" Style="{StaticResource PrimaryButton}" MinWidth="96" Click="OnSave" />
-            <TextBlock x:Name="SaveStatus" FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap" MaxWidth="120"
-                       Foreground="{DynamicResource SuccessBrush}" />
-        </StackPanel>
+        <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,8"
+                Padding="12,8" CornerRadius="10" Background="{DynamicResource SurfaceBrush}"
+                BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="16" ShadowDepth="3" Opacity="0.18" />
+            </Border.Effect>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock x:Name="SaveStatus" FontSize="11" Margin="0,0,12,0"
+                           VerticalAlignment="Center" Foreground="{DynamicResource SuccessBrush}" />
+                <Button Content="保存设置" Style="{StaticResource PrimaryButton}" MinWidth="96"
+                        Click="OnSave" />
+            </StackPanel>
+        </Border>
     </Grid>
 </UserControl>

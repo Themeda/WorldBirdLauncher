@@ -15,7 +15,9 @@ public partial class App : Application
 
         // 主题要在第一个窗口建出来之前应用（Theme.xaml 里全是 DynamicResource，
         // 这里换掉同名画刷，界面一开就是用户选的主题，不会闪一下默认色）
-        Services.ThemeManager.Apply(Services.AppSession.Current.Settings.ThemeMode);
+        Services.ThemeManager.Apply(
+            Services.AppSession.Current.Settings.ThemeMode,
+            Services.AppSession.Current.Settings.AccentColor);
 
         // 兜底：把未处理异常写进 %APPDATA%\WorldBirdLauncher\launcher-error.log，
         // 免得再出现"程序无声消失、只能靠事件查看器猜"的情况。

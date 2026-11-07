@@ -191,7 +191,7 @@ public sealed class ForgeInstallerService
     /// <summary>用户要求：失败不删东西，只把"半成品在哪、怎么重来"说清楚。</summary>
     private static string KeepMessage(string versionDirectory, string message) =>
         $"{message}\n半成品已保留在 {versionDirectory}（下次重装可以直接复用已下好的文件）。" +
-        "想彻底重来就删掉这个版本目录，或者用「安装版本…」里的重装。";
+        "想彻底重来就删掉这个版本目录，然后重新运行对应的加载器安装器。";
 
     /// <summary>
     /// 模块化加载器（jvm 参数里出现 <c>-DignoreList</c> 的就是，Forge 1.17+ / NeoForge）需要在版本目录里

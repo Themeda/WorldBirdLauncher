@@ -14,8 +14,6 @@
                                FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
                                Foreground="{DynamicResource TextMutedBrush}" />
                     <WrapPanel Margin="0,14,0,0">
-                        <Button x:Name="InstallGameButton" Content="安装游戏版本…" Style="{StaticResource PrimaryButton}"
-                                Margin="0,0,10,10" Padding="18,8" Click="OnInstallGame" />
                         <Button Content="下载模组 / 光影包…" Style="{StaticResource GhostButton}"
                                 Margin="0,0,10,10" Padding="18,8" Click="OnDownloadMods" />
                         <Button Content="打开游戏目录" Style="{StaticResource GhostButton}"
@@ -143,9 +141,9 @@
                 <StackPanel>
                     <TextBlock Text="说明" FontSize="13" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextPrimaryBrush}" />
-                    <TextBlock x:Name="InstallGameHelp" FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap"
+                    <TextBlock FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap"
                                Foreground="{DynamicResource TextSecondaryBrush}"
-                               Text="· 安装游戏版本：可选原版 / Forge / Fabric，支持 Iris 与 OptiFine 光影；版本名可自定义，同一游戏版本可装多份（重名会提示覆盖）。" />
+                               Text="· 本启动器不提供游戏版本安装；请在设置页选择本机已有的游戏版本。整合包仍可按其清单导入。" />
                     <TextBlock FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
                                Foreground="{DynamicResource TextSecondaryBrush}"
                                Text="· 下载模组 / 光影包：数据源 Modrinth，按目标版本的加载器自动匹配；模组进 mods，光影包进 shaderpacks。" />

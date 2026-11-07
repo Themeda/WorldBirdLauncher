@@ -520,6 +520,22 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
     }
 
+    private bool _navCollapsed;
+
+    private void OnToggleNav(object sender, RoutedEventArgs e)
+    {
+        _navCollapsed = !_navCollapsed;
+        NavColumn.Width = new GridLength(_navCollapsed ? 64 : 176);
+        var visibility = _navCollapsed ? Visibility.Collapsed : Visibility.Visible;
+        NavLaunchText.Visibility = visibility;
+        NavServersText.Visibility = visibility;
+        NavSkinText.Visibility = visibility;
+        NavDownloadText.Visibility = visibility;
+        NavSettingsText.Visibility = visibility;
+        NavCollapseButton.Content = _navCollapsed ? "»" : "« 收起";
+        NavCollapseButton.ToolTip = _navCollapsed ? "展开导航栏" : "收起导航栏";
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
 
     public ObservableCollection<ServerCardViewModel> Servers { get; } = [];
@@ -2386,15 +2402,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// <summary>
     /// 直连启动前的版本处理（2026-10-06 用户确认的规则）：
     /// 版本匹配 → 直接放行；不匹配 → 不支持跨版本的服务器按<b>严格版本档</b>自动切换，
-    /// 支持跨版本的服务器弹窗让用户挑；本机没有匹配版本 → 弹「下载并启动」，
-    /// 装完（原版 → 加载器 → 光影）自动切换版本。返回 false 表示用户取消或安装失败。
+    /// 支持跨版本的服务器弹窗让用户挑；本机没有匹配版本时提示先行安装。
+    /// 返回 false 表示用户取消或本机没有可用版本。
     /// </summary>
-    public async Task<bool> EnsureCompatibleVersionAsync(ServerEntry entry, string serverName)
+    public Task<bool> EnsureCompatibleVersionAsync(ServerEntry entry, string serverName)
     {
         var current = _session.CurrentVersionId;
         if (Core.Models.VersionCompatibility.IsCompatible(entry, current))
         {
-            return true;
+            return Task.FromResult(true);
         }
 
         var supported = Core.Models.VersionCompatibility.DescribeSupported(entry);
@@ -2418,7 +2434,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 if (picker.ShowDialog() != true)
                 {
                     StatusBar.Text = $"已取消启动（未选择版本）：{serverName}";
-                    return false;
+                    return Task.FromResult(false);
                 }
 
                 chosen = picker.SelectedVersionId;
@@ -2434,117 +2450,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             _session.CurrentVersionId = chosen;
             StatusBar.Text = $"已自动切换到 {chosen}（服务器「{serverName}」支持 {supported}）。";
-            return true;
+            return Task.FromResult(true);
         }
 
-        return await PromptAndInstallVersionAsync(entry, serverName, supported);
-    }
-
-    /// <summary>本机没有匹配版本：弹预填好的下载确认窗，装完自动切换并放行启动。</summary>
-    private async Task<bool> PromptAndInstallVersionAsync(ServerEntry entry, string serverName, string supported)
-    {
-        var band = Core.Models.VersionSelection.TargetBand(entry);
-
-        IReadOnlyList<string> releases;
-        try
-        {
-            var remote = await _session.Installation.GetRemoteVersionsAsync();
-            releases = remote
-                .Where(v => string.Equals(v.Type, "release", StringComparison.OrdinalIgnoreCase))
-                .Select(v => v.Id)
-                .ToList();
-        }
-        catch (Exception ex)
-        {
-            Views.MessageWindow.Info(this, "无法获取版本清单",
-                $"读取远程版本列表失败：{ex.Message}\n\n请稍后重试，或到「资源下载 → 安装游戏版本」手动安装。");
-            return false;
-        }
-
-        var sameBand = releases
-            .Where(id => Core.Models.VersionSelection.IsSameBand(band, id))
-            .OrderByDescending(id => id, Comparer<string>.Create(Core.Models.VersionSelection.CompareVersions))
-            .ToList();
-        var recommended = sameBand.FirstOrDefault()
-                          ?? Core.Models.VersionSelection.PickRecommendedRemoteVersion(band, releases);
-        if (string.IsNullOrWhiteSpace(recommended))
-        {
-            Views.MessageWindow.Info(this, "没有可下载的版本",
-                $"服务器「{serverName}」声明支持 {supported}，但没有在官方版本清单里找到对应版本。\n\n" +
-                "可以到「资源下载 → 安装游戏版本」手动安装。");
-            return false;
-        }
-
-        var (defaultLoader, defaultShader, note) = SuggestLoaderAndShader(entry);
-        var window = new Views.AutoInstallWindow(
-            this, serverName, supported, sameBand, recommended!, defaultLoader, defaultShader, note);
-        if (window.ShowDialog() != true || window.Plan is null)
-        {
-            StatusBar.Text = $"已取消下载：{serverName}";
-            return false;
-        }
-
-        var plan = window.Plan;
-        var loaderText = plan.Loader == VersionInstallPlan.NoLoader ? "原版" : $"{plan.Loader} {plan.LoaderVersion}";
-        var shaderText = plan.Shader == VersionInstallPlan.NoShader ? "无光影" : plan.Shader;
-        var steps = new List<DownloadStep>
-        {
-            new(DownloadCategory.游戏本体, $"游戏本体 {plan.GameVersion}"),
-        };
-        if (plan.Loader != VersionInstallPlan.NoLoader)
-        {
-            steps.Add(new DownloadStep(DownloadCategory.模组加载器, $"{plan.Loader} {plan.LoaderVersion}"));
-        }
-
-        if (plan.Shader != VersionInstallPlan.NoShader)
-        {
-            steps.Add(new DownloadStep(DownloadCategory.光影, plan.Shader));
-        }
-
-        var task = new DownloadTask(
-            $"{plan.GameVersion}（{loaderText} · {shaderText}）→ {plan.TargetName}（直连启动）", steps);
-        DownloadManager.Current.Enqueue(task, async (progress, token) =>
-        {
-            var result = await VersionInstallService.InstallAsync(plan, steps, progress, token);
-            return (result.Success, result.Message);
-        });
-
-        StatusBar.Text = $"正在下载 {task.Title}…装完会自动切换版本并启动。";
-        var success = await task.Completion;
-        if (!success)
-        {
-            Views.MessageWindow.Info(this, "下载失败", $"{task.Message}\n\n可在「资源下载」页查看详情或重试。");
-            StatusBar.Text = $"下载失败：{serverName}";
-            return false;
-        }
-
-        StatusBar.Text = $"{task.Message}（来自直连启动）";
-        return true;
-    }
-
-    /// <summary>按服务器声明的加载器给出默认选择与注意事项。</summary>
-    private static (string Loader, string Shader, string? Note) SuggestLoaderAndShader(ServerEntry entry)
-    {
-        var loader = entry.Loader?.Trim() switch
-        {
-            "Fabric" => "Fabric",
-            "Forge" => "Forge",
-            _ => VersionInstallPlan.NoLoader, // 原版 / NeoForge（暂不支持自动装）/ 未知
-        };
-
-        var shader = loader is "Fabric" ? "Iris" : "OptiFine";
-        var notes = new List<string>();
-        if (string.Equals(entry.Loader?.Trim(), "NeoForge", StringComparison.OrdinalIgnoreCase))
-        {
-            notes.Add("本启动器暂不支持自动安装 NeoForge，这里先按原版 + 光影装；需要 NeoForge 请手动安装后再启动");
-        }
-
-        if (loader == "Forge")
-        {
-            notes.Add("Forge 服务器常要求特定 Forge 版本，自动装的是官方最新版，进不去请在「安装版本」里手动挑版本");
-        }
-
-        return (loader, shader, notes.Count == 0 ? null : string.Join("；", notes));
+        Views.MessageWindow.Info(
+            this,
+            "本机没有匹配版本",
+            $"服务器「{serverName}」支持 {supported}，但本机没有可用的匹配版本。\n\n" +
+            "请使用官方启动器或其他来源安装对应游戏版本，再到设置页选择后启动。");
+        StatusBar.Text = $"已取消启动（本机没有 {supported} 的可用版本）：{serverName}";
+        return Task.FromResult(false);
     }
 
     private void OnSubmitServer(object sender, RoutedEventArgs e)

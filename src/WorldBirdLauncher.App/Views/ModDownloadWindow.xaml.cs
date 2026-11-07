@@ -31,7 +31,7 @@ public partial class ModDownloadWindow : Window
         }
 
         StatusText.Text = installed.Count == 0
-            ? "本机还没有已安装的版本，请先到「安装版本…」装一个。"
+            ? "本机还没有已安装的游戏版本，请先用官方启动器或其他来源安装。"
             : $"目标版本共 {installed.Count} 个。";
     }
 

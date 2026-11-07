@@ -36,7 +36,7 @@ public partial class LauncherPage : UserControl
             _ = LoadRecentServersAsync();
         });
 
-        Loaded += async (_, _) =>
+        Loaded += (_, _) =>
         {
             if (!_initialized)
             {
@@ -44,8 +44,6 @@ public partial class LauncherPage : UserControl
                 TipText.Text = _session.Tips.Next();
                 _tipTimer.Tick += (_, _) => TipText.Text = _session.Tips.Next();
                 _tipTimer.Start();
-
-                await EnsureAccountAsync(isFirstRun: true);
             }
 
             RefreshIdentity();
@@ -208,16 +206,16 @@ public partial class LauncherPage : UserControl
         OpenSwitcher();
     }
 
-    /// <summary>没有账户时（首次启动或点了推荐服启动）先引导登录。</summary>
-    private Task<bool> EnsureAccountAsync(bool isFirstRun = false)
+    /// <summary>Launching never opens the authorization window by itself.</summary>
+    private Task<bool> EnsureAccountAsync()
     {
         if (_session.CurrentAccount is not null)
         {
             return Task.FromResult(true);
         }
 
-        SetStatus(isFirstRun ? "首次启动，请先使用 Microsoft 账户登录。" : "还没有账户，请先登录。");
-        return Task.FromResult(OpenLogin());
+        SetStatus("还没有登录：请点击「Microsoft 账户管理」完成正版授权。");
+        return Task.FromResult(false);
     }
 
     // ---------- 提示与进度 ----------
@@ -750,11 +748,8 @@ public partial class LauncherPage : UserControl
         // 进服会被服务器拒绝。这里先让他重新登录一次。
         if (_session.CurrentAccount is { } signedOutCandidate && AccountService.IsSignedOut(signedOutCandidate))
         {
-            SetStatus($"账户「{signedOutCandidate.Name}」已登出，请重新登录后再启动。");
-            if (!OpenLogin())
-            {
-                return;
-            }
+            SetStatus($"账户「{signedOutCandidate.Name}」已登出，请点击「Microsoft 账户管理」重新登录后再启动。");
+            return;
         }
 
         // 微软正版账户：access token 快到期时先用 refresh_token 静默续期（免二次授权）。
@@ -772,11 +767,8 @@ public partial class LauncherPage : UserControl
             }
             catch (Exception ex)
             {
-                SetStatus($"微软登录已过期，需要重新登录：{ex.Message}");
-                if (!OpenLogin())
-                {
-                    return;
-                }
+                SetStatus($"微软登录已过期，请点击「Microsoft 账户管理」重新登录：{ex.Message}");
+                return;
             }
         }
 
