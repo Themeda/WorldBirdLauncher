@@ -9,7 +9,7 @@ public sealed class LauncherStoragePathsTests : IDisposable
         "wbl-public-storage-tests-" + Guid.NewGuid().ToString("N"));
 
     [Fact]
-    public void 应用数据_首次升级复制旧目录且保留原文件()
+    public void 应用数据_只使用WorldBirdLauncher目录()
     {
         var legacy = Path.Combine(_root, "McServerList");
         Directory.CreateDirectory(legacy);
@@ -18,7 +18,7 @@ public sealed class LauncherStoragePathsTests : IDisposable
         var current = LauncherStoragePaths.ResolveAppDataDirectory(_root);
 
         Assert.Equal(Path.Combine(_root, "WorldBirdLauncher"), current);
-        Assert.Equal("legacy-account", File.ReadAllText(Path.Combine(current, "accounts.dat")));
+        Assert.False(Directory.Exists(current));
         Assert.True(File.Exists(Path.Combine(legacy, "accounts.dat")));
     }
 

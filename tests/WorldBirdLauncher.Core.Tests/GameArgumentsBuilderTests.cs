@@ -9,8 +9,9 @@ namespace WorldBirdLauncher.Core.Tests;
 
 /// <summary>
 /// 自研启动参数构建的回归测试（替代 StarLight 的 ArgumentsBuildUtil）。
-/// 口径：与 StarLight.Core 2.0.5 逐 token 一致，只允许三处刻意差异——
-/// ① 不用它的 launch_wrapper.jar；② 品牌换成我们自己的；③ 没替换掉的占位符不再透传给游戏。
+/// 口径：与 StarLight.Core 2.0.5 逐 token 一致，只允许四处刻意差异——
+/// ① 不用它的 launch_wrapper.jar；② 品牌换成我们自己的；③ 没替换掉的占位符不再透传给游戏；
+/// ④ Microsoft 账户固定使用 msa 用户类型。
 /// 最后一条用例直接拿 StarLight 现算一遍做对照，这样口径永远不会"过期"。
 /// </summary>
 public class GameArgumentsBuilderTests
@@ -20,7 +21,6 @@ public class GameArgumentsBuilderTests
 
     private static AccountProfile Account() => new()
     {
-        Kind = AccountKind.离线,
         Name = "Tester",
         Uuid = "11111111222233334444555566667777",
         AccessToken = "0",
@@ -357,7 +357,7 @@ public class GameArgumentsBuilderTests
             };
             var javaConfig = new JavaConfig { JavaPath = "javaw.exe", MaxMemory = 4096, MinMemory = 512 };
             var windowConfig = new GameWindowConfig { Width = 854, Height = 480, IsFullScreen = false };
-            BaseAccount account = new OfflineAccount
+            BaseAccount account = new MicrosoftAccount
             {
                 Name = "Tester",
                 Uuid = "11111111222233334444555566667777",
@@ -373,12 +373,13 @@ public class GameArgumentsBuilderTests
         }
     }
 
-    /// <summary>归一化三处刻意差异：wrapper 段、未解析占位符、natives 目录。</summary>
+    /// <summary>归一化刻意差异：wrapper 段、未解析占位符、natives 目录与 Microsoft 用户类型。</summary>
     private static string Normalize(string arguments, string versionId, string nativesDirectory)
     {
         var normalized = Regex.Replace(arguments, @"-Doolloo\.jlw\.tmpdir=""[^""]*"" -jar ""[^""]*""", string.Empty);
         normalized = Regex.Replace(normalized, @"--[A-Za-z][A-Za-z0-9-]*\s+\$\{[^}]+\}", string.Empty);
         normalized = Regex.Replace(normalized, @"\$\{[^}]+\}", string.Empty);
+        normalized = normalized.Replace("--userType Mojang", "--userType msa", StringComparison.Ordinal);
         normalized = normalized.Replace(
             Path.Combine(RealGameRoot, "versions", versionId, "natives"),
             "{NATIVES}",

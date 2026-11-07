@@ -83,7 +83,7 @@ public sealed class CatalogApiClient
             BaseAddress = new Uri((endpoint ?? AppInfo.CatalogEndpoint).TrimEnd('/') + "/"),
             Timeout = TimeSpan.FromSeconds(20),
         };
-        _http.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.1.1");
+        _http.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.2.0");
     }
 
     public string Endpoint => _http.BaseAddress?.ToString() ?? string.Empty;
@@ -149,7 +149,7 @@ public sealed class CatalogApiClient
         DateTimeOffset? LastRefreshedAt,
         double HeatBonus = 0);
 
-    /// <summary>排序加成的下发改成 { code, data } 包一层（和广告接口一致）。</summary>
+    /// <summary>The boost response uses a { code, data } envelope.</summary>
     public sealed record BoostListDto(int Code, List<BoostDto> Data);
 
     /// <summary>取排序加成列表（很小，跟状态一起刷新）。</summary>

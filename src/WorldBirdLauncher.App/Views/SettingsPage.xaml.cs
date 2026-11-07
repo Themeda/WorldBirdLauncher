@@ -167,9 +167,7 @@ public partial class SettingsPage : UserControl
         IncompleteVersionsText.Text =
             $"检测到 {broken.Count} 个不完整的版本目录（缺少版本 JSON，无法启动，也不会出现在版本列表里）：" +
             string.Join("、", broken.Select(v => v.Id)) +
-            (AppEdition.AllowsVersionDownload
-                ? "。如果是手动放进去的 OptiFine 安装器，请用「安装版本…」重新安装光影。"
-                : "。本版本不下载游戏版本，请用官方启动器补齐这些版本。");
+            "。如果是手动放进去的 OptiFine 安装器，请用「安装版本…」重新安装光影。";
         IncompleteVersionsText.Visibility = Visibility.Visible;
     }
 
@@ -287,20 +285,13 @@ public partial class SettingsPage : UserControl
                         ? current
                         : installed.FirstOrDefault()?.Id;
                     _suppressPick = false;
-                    MaintenanceStatus.Text = AppEdition.AllowsVersionDownload
-                        ? $"已刷新：本机已安装 {installed.Count} 个版本（安装新版本请点「安装版本…」）。"
-                        : $"已刷新：本机已安装 {installed.Count} 个版本（本版本不下载游戏版本，请用官方启动器安装）。";
+                    MaintenanceStatus.Text =
+                        $"已刷新：本机已安装 {installed.Count} 个版本（安装新版本请点「安装版本…」）。";
                     break;
                 }
 
                 case "install":
                 {
-                    if (!AppEdition.AllowsVersionDownload)
-                    {
-                        MaintenanceStatus.Text = "本版本不提供游戏版本下载，请先用官方启动器安装。";
-                        break;
-                    }
-
                     // 弹窗里选版本 + 选加载器（原版 / Forge / Fabric）
                     _busy = false; // 弹窗自己管理忙碌状态，避免遮住它
                     var dialog = new InstallVersionWindow { Owner = Window.GetWindow(this) };
@@ -352,7 +343,7 @@ public partial class SettingsPage : UserControl
                             curseForgeApiKey: null,
                             progress: progress,
                             cancellationToken: token,
-                            allowVersionDownload: AppEdition.AllowsVersionDownload);
+                            allowVersionDownload: true);
                         return (result.Success, result.Message);
                     });
                     MaintenanceStatus.Text = "已在「资源下载」里开始安装整合包…";
@@ -467,12 +458,12 @@ public partial class SettingsPage : UserControl
         // 注册/登录后在服主后台认领并提交新服务器。
         try
         {
-            Process.Start(new ProcessStartInfo(AppInfo.AdvertiserEntryUrl) { UseShellExecute = true });
+            Process.Start(new ProcessStartInfo(AppInfo.ServerOwnerEntryUrl) { UseShellExecute = true });
             CatalogStatus.Text = "已打开官网「服主入口」：注册/登录后即可在服主后台提交新服务器，审核通过后出现在列表里。";
         }
         catch (Exception ex)
         {
-            CatalogStatus.Text = $"打开浏览器失败：{ex.Message}（地址：{AppInfo.AdvertiserEntryUrl}）";
+            CatalogStatus.Text = $"打开浏览器失败：{ex.Message}（地址：{AppInfo.ServerOwnerEntryUrl}）";
         }
     }
 }

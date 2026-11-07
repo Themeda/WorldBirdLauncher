@@ -5,13 +5,13 @@ using WorldBirdLauncher.Core.Launcher;
 namespace WorldBirdLauncher.Core.Tests;
 
 /// <summary>
-/// 阉割版（allowVersionDownload=false）的整合包边界（2026-10-20 用户确认）：
-/// 不替用户下载游戏版本；只有自带游戏本体的离线完整包才允许解析。
+/// Modpack installation boundaries when version downloading is disabled:
+/// only archives carrying their own game files are accepted.
 /// </summary>
-public class ModpackInstallerLiteTests
+public class ModpackInstallerDownloadModeTests
 {
     [Fact]
-    public async Task 阉割版拒绝只有清单的_CurseForge_整合包()
+    public async Task 禁止版本下载时拒绝只有清单的_CurseForge_整合包()
     {
         var archive = CreateZip(new Dictionary<string, string>
         {
@@ -38,7 +38,7 @@ public class ModpackInstallerLiteTests
     }
 
     [Fact]
-    public async Task 阉割版拒绝没有_jar_的离线包()
+    public async Task 禁止版本下载时拒绝没有客户端的完整包()
     {
         var archive = CreateZip(new Dictionary<string, string>
         {

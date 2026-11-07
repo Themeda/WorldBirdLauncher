@@ -1,6 +1,5 @@
 using WorldBirdLauncher.Core.Launcher;
 using WorldBirdLauncher.Core.Services;
-using WorldBirdLauncher.App.Ads;
 
 namespace WorldBirdLauncher.App.Services;
 
@@ -30,24 +29,15 @@ public sealed class AppSession
             Store.History.Any(h => string.Equals(h.ServerId, id, StringComparison.OrdinalIgnoreCase));
         Icons = new IconCache(new CatalogApiClient());
         Tips = new TipsService();
-        // 付费推广：广告拉取/缓存/事件上报（用目录缓存里的匿名设备号，不读系统 MachineGuid）
-        Ads = new AdService(Catalog.DeviceId);
         // 服务端下发新文案后，启动页的提示列表跟着刷新
         RemoteCatalog.TipsUpdated += Tips.Reload;
 
         Installation.SetDownloadSource(Settings.UseMirror);
-        // 阉割版不提供离线登录：旧版本留下的离线账户不显示、也不自动选中（数据仍留在 accounts.dat 里）
-        AccountList = Accounts.Load()
-            .Where(a => AppEdition.AllowsOfflineLogin || a.Kind != AccountKind.离线)
-            .ToList();
+        AccountList = Accounts.Load().ToList();
 
         // 恢复上次使用的账户 / 游戏版本 / Java（找不到才回退到默认值）
         _suppressPersist = true;
-        CurrentAccount = RestoreAccount()
-                         ?? (AppEdition.AllowsOfflineLogin
-                             ? AccountList.FirstOrDefault(a => a.Kind == AccountKind.离线)
-                             : null)
-                         ?? AccountList.FirstOrDefault();
+        CurrentAccount = RestoreAccount() ?? AccountList.FirstOrDefault();
         CurrentVersionId = Settings.LastVersionId is { Length: > 0 } lastVersion &&
                            System.IO.Directory.Exists(Path.Combine(GameRoot, "versions", lastVersion))
             ? lastVersion
@@ -79,14 +69,13 @@ public sealed class AppSession
 
     private AccountProfile? RestoreAccount()
     {
-        if (string.IsNullOrWhiteSpace(Settings.LastAccountName) ||
-            !Enum.TryParse<AccountKind>(Settings.LastAccountKind, out var kind))
+        if (string.IsNullOrWhiteSpace(Settings.LastAccountName))
         {
             return null;
         }
 
         return AccountList.FirstOrDefault(a =>
-            a.Kind == kind && string.Equals(a.Name, Settings.LastAccountName, StringComparison.OrdinalIgnoreCase));
+            string.Equals(a.Name, Settings.LastAccountName, StringComparison.OrdinalIgnoreCase));
     }
 
     private bool _suppressPersist;
@@ -99,7 +88,6 @@ public sealed class AppSession
             return;
         }
 
-        Settings.LastAccountKind = CurrentAccount?.Kind.ToString();
         Settings.LastAccountName = CurrentAccount?.Name;
         Settings.LastVersionId = CurrentVersionId;
         Settings.LastJavaPath = CurrentJava?.JavaPath;
@@ -176,9 +164,6 @@ public sealed class AppSession
 
     /// <summary>启动页底部的游戏提示。</summary>
     public TipsService Tips { get; }
-
-    /// <summary>广告服务（拉取广告位内容、事件上报、不感兴趣）。</summary>
-    public AdService Ads { get; }
 
     /// <summary>本地保存的账户列表。</summary>
     public List<AccountProfile> AccountList { get; private set; }
@@ -262,9 +247,7 @@ public sealed class AppSession
     }
 
     /// <summary>重新从本地读一遍账户列表（登录 / 登出 / 删除之后调用）。</summary>
-    public void RefreshAccounts() => AccountList = Accounts.Load()
-        .Where(a => AppEdition.AllowsOfflineLogin || a.Kind != AccountKind.离线)
-        .ToList();
+    public void RefreshAccounts() => AccountList = Accounts.Load().ToList();
 
     /// <summary>切换到某个已保存的账户。</summary>
     public void SwitchAccount(AccountProfile profile) => CurrentAccount = profile;
@@ -290,13 +273,12 @@ public sealed class AppSession
     private void SyncCurrentAfterChange(AccountProfile profile)
     {
         if (CurrentAccount is null ||
-            CurrentAccount.Kind != profile.Kind ||
             !string.Equals(CurrentAccount.Name, profile.Name, StringComparison.OrdinalIgnoreCase))
         {
             return;
         }
 
         CurrentAccount = AccountList.FirstOrDefault(a =>
-            a.Kind == profile.Kind && string.Equals(a.Name, profile.Name, StringComparison.OrdinalIgnoreCase));
+            string.Equals(a.Name, profile.Name, StringComparison.OrdinalIgnoreCase));
     }
 }

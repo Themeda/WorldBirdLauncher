@@ -38,6 +38,8 @@
       "找不到资源 assets/app.ico" —— 实测直接起不来（WPF 的 .ico 不会自动当 Resource）。
     -->
     <Resource Include="Assets\app.ico" />
+    <None Include="Assets\app-icon.svg" />
+    <Resource Include="Assets\app-icon.png" />
     <!-- skinview3d 打包进程序集：国内环境下 jsDelivr 等 CDN 常被墙，不能依赖在线脚本 -->
     <EmbeddedResource Include="Assets\skinview3d.bundle.js" />
     <None Include="Assets\skinview3d.LICENSE.txt" />
@@ -55,29 +57,17 @@
     <AutomaticallyUseReferenceAssemblyPackages>true</AutomaticallyUseReferenceAssemblyPackages>
     <!-- 托盘图标用 System.Windows.Forms.NotifyIcon（无需第三方依赖） -->
     <UseWindowsForms>true</UseWindowsForms>
-    <AssemblyName>WBL-Pro</AssemblyName>
-    <RootNamespace>WorldBirdLauncher.App</RootNamespace>
-    <Product>WorldBirdLauncher-Pro</Product>
-    <AssemblyTitle>WorldBirdLauncher-Pro</AssemblyTitle>
-    <FileDescription>WorldBirdLauncher-Pro · 我的世界服务器列表</FileDescription>
-    <!-- exe 图标：与窗口左上角那个"蓝底白镐"一致（资源管理器 / 任务栏 / 文件属性都显示） -->
-    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Version>0.1.1</Version>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <!-- 本程序是 WPF，DPI 感知写在 app.manifest 里是正确的；WFAC010 是启用 WinForms 后的误报 -->
-    <NoWarn>$(NoWarn);WFAC010</NoWarn>
-  </PropertyGroup>
-
-  <!--
-    阉割版（2026-10-20 用户确认）：同一套代码，LiteEdition=true 时编译进 LITE 常量并改程序名。
-    完整版不受影响（不传这个属性时与之前完全一致）。
-  -->
-  <PropertyGroup Condition="'$(LiteEdition)' == 'true'">
-    <DefineConstants>$(DefineConstants);LITE</DefineConstants>
     <AssemblyName>WBL</AssemblyName>
+    <RootNamespace>WorldBirdLauncher.App</RootNamespace>
     <Product>WorldBirdLauncher</Product>
     <AssemblyTitle>WorldBirdLauncher</AssemblyTitle>
     <FileDescription>WorldBirdLauncher · 我的世界服务器列表</FileDescription>
+    <!-- exe 图标：与窗口左上角那个"蓝底白镐"一致（资源管理器 / 任务栏 / 文件属性都显示） -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
+    <Version>0.2.0</Version>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- 本程序是 WPF，DPI 感知写在 app.manifest 里是正确的；WFAC010 是启用 WinForms 后的误报 -->
+    <NoWarn>$(NoWarn);WFAC010</NoWarn>
   </PropertyGroup>
 
   <!-- 发布为自包含单文件：用户无需安装 .NET 运行时 -->

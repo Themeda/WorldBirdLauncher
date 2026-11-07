@@ -8,13 +8,12 @@
     运行时由 src\WorldBirdLauncher.App\Program.cs 的入口负责从载荷里解析程序集、并把原生 dll 解到
     %LOCALAPPDATA%\WorldBirdLauncher\native\<版本>。
 
-    用法：pwsh -File scripts/pack-net48.ps1 [-Out <目录>] [-Lite]
-    产物：<Out>\WBL-Pro.exe；加 -Lite 时是 <Out>\WBL.exe
+    用法：pwsh -File scripts/pack-net48.ps1 [-Out <目录>]
+    产物：<Out>\WBL.exe
 #>
 
 param(
-    [string]$Out = '',
-    [switch]$Lite
+    [string]$Out = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -37,14 +36,12 @@ if (-not $dotnet -or -not (Test-Path $dotnet)) {
 if (-not $dotnet) { throw '找不到 dotnet.exe，请把 .NET SDK 装好或加进 PATH' }
 
 $buildArgs = @('build', $project, '-c', 'Release', '-f', 'net48', '-v', 'q', '--nologo')
-if ($Lite) { $buildArgs += @('-p:LiteEdition=true') }
 & $dotnet @buildArgs
 if ($LASTEXITCODE -ne 0) { throw "构建失败，退出码 $LASTEXITCODE" }
 
 # 只嵌入运行时真正需要的东西：跳过 exe 自己、pdb、xml 文档、exe.config（绑定重定向由解析器代替）
-$exeName = if ($Lite) { 'WBL.exe' } else { 'WBL-Pro.exe' }
+$exeName = 'WBL.exe'
 $payloadFiles = Get-ChildItem $bin -File | Where-Object {
-    # 两个发行版共用 bin 目录，另一种发行版的 exe 也不能塞进载荷
     $_.Extension -ne '.exe' -and
     $_.Extension -notin @('.pdb', '.xml') -and
     $_.Extension -ne '.config'

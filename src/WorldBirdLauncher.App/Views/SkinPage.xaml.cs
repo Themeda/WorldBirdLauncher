@@ -10,7 +10,7 @@ namespace WorldBirdLauncher.App.Views;
 
 /// <summary>
 /// 皮肤展示：用 WebView2 嵌 skinview3d 渲染可旋转的 3D 皮肤；
-/// 皮肤来源按账户类型解析（正版→Mojang、外置→皮肤站、离线→按 ID 查 Mojang，查不到用默认）。
+/// 皮肤来源为 Microsoft 档案对应的 Mojang 官方皮肤。
 /// </summary>
 public partial class SkinPage : UserControl
 {
@@ -63,14 +63,14 @@ public partial class SkinPage : UserControl
     }
 
     /// <summary>
-    /// 离线账户兜底：挑一张本机的皮肤 PNG（按「账户类型 + 账户名」记住，只存路径不拷贝文件）。
+    /// Pick a local skin PNG as a preview fallback (store its path only).
     /// </summary>
     private void OnPickLocalSkin(object sender, RoutedEventArgs e)
     {
         var account = _session.CurrentAccount;
         if (account is null)
         {
-            HintText.Text = "还没有账户：请先到启动页选择账户类型登录。";
+            HintText.Text = "还没有账户：请先到启动页使用 Microsoft 账户登录。";
             HintPanel.Visibility = Visibility.Visible;
             return;
         }
@@ -89,7 +89,7 @@ public partial class SkinPage : UserControl
         _ = ReloadAsync();
     }
 
-    /// <summary>清除本账户指定的本地皮肤，回到按账户类型自动解析。</summary>
+    /// <summary>Clear the local override and return to the Microsoft profile skin.</summary>
     private void OnClearLocalSkin(object sender, RoutedEventArgs e)
     {
         if (_session.CurrentAccount is { } account)
@@ -111,8 +111,8 @@ public partial class SkinPage : UserControl
         _busy = true;
         var account = _session.CurrentAccount;
         AccountText.Text = account is null
-            ? "还没有账户（请到启动页选择账户类型登录）"
-            : $"{account.Name} · {account.Kind}";
+            ? "还没有账户（请到启动页使用 Microsoft 账户登录）"
+            : $"{account.Name} · Microsoft 账户";
 
         HintText.Text = "正在准备 3D 视图…";
         HintPanel.Visibility = Visibility.Visible;
@@ -157,7 +157,7 @@ public partial class SkinPage : UserControl
             SourceText.Text = account is null
                 ? "皮肤来源：未选择账户"
                 : skin is null
-                    ? "皮肤来源：默认皮肤（该 ID 未在正版库中找到，或离线 / 未取到皮肤）"
+                    ? "皮肤来源：默认皮肤（Mojang 未返回该档案的皮肤）"
                     : $"皮肤来源：{DescribeSource(skin.Source)}" + (isSlim ? "（纤细模型 Alex）" : "（经典模型 Steve）");
 
             // 指定过本地皮肤文件才显示「清除」入口

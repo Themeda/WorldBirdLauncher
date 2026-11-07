@@ -157,33 +157,14 @@ public sealed record ModpackInstallResult
     public IReadOnlyList<string> FailedFiles { get; init; } = [];
 }
 
-/// <summary>账户类型（与 StarLight.Core 的 AuthType 对应，便于持久化）。</summary>
-public enum AccountKind
-{
-    离线,
-    微软,
-    外置,
-    统一通行证,
-}
-
 /// <summary>本地保存的账户档案。</summary>
 public sealed record AccountProfile
 {
-    public required AccountKind Kind { get; init; }
-
     public required string Name { get; init; }
 
     public string Uuid { get; init; } = string.Empty;
 
     public string AccessToken { get; init; } = string.Empty;
-
-    public string ClientToken { get; init; } = string.Empty;
-
-    /// <summary>外置登录的皮肤站地址（Yggdrasil）。</summary>
-    public string? ServerUrl { get; init; }
-
-    /// <summary>统一通行证的服务器 ID。</summary>
-    public string? UnifiedPassServerId { get; init; }
 
     /// <summary>
     /// 微软账户的 MSA refresh_token（只在 DPAPI 加密的 accounts.dat 里保存，用于免授权续期）。
@@ -195,14 +176,7 @@ public sealed record AccountProfile
 
     public DateTimeOffset CreatedAt { get; init; } = DateTimeOffset.Now;
 
-    public string DisplayText => Kind switch
-    {
-        AccountKind.离线 => $"{Name}（离线）",
-        AccountKind.微软 => $"{Name}（微软正版）",
-        AccountKind.外置 => $"{Name}（外置 · {ServerUrl}）",
-        AccountKind.统一通行证 => $"{Name}（统一通行证）",
-        _ => Name,
-    };
+    public string DisplayText => $"{Name}（微软正版）";
 }
 
 /// <summary>启动请求。</summary>

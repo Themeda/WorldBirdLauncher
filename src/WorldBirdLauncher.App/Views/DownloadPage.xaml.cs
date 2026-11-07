@@ -15,15 +15,6 @@ public partial class DownloadPage : UserControl
     {
         InitializeComponent();
         DataContext = DownloadManager.Current;
-        if (!AppEdition.AllowsVersionDownload)
-        {
-            // 阉割版只保留模组/光影下载（用户 2026-10-20 确认）
-            InstallGameButton.Visibility = Visibility.Collapsed;
-            InstallGameHelp.Text =
-                "· 本版本不提供游戏版本下载：请先用官方启动器安装好游戏与加载器；这里只下载模组 / 光影包。"
-                + "导入整合包时，压缩包必须自带游戏本体，否则会提示无法解析。";
-        }
-
         Loaded += (_, _) => ReloadConcurrency();
     }
 
@@ -79,12 +70,6 @@ public partial class DownloadPage : UserControl
 
     private void OnInstallGame(object sender, RoutedEventArgs e)
     {
-        if (!AppEdition.AllowsVersionDownload)
-        {
-            StatusText.Text = "本版本不提供游戏版本下载，请先用官方启动器安装。";
-            return;
-        }
-
         new InstallVersionWindow { Owner = Window.GetWindow(this) }.ShowDialog();
         StatusText.Text = "安装任务已在后台执行，可在下方任务列表查看进度。";
     }

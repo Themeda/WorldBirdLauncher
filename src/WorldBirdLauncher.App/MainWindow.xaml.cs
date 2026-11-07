@@ -6,7 +6,6 @@ using System.Windows.Input;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
-using WorldBirdLauncher.App.Ads;
 using WorldBirdLauncher.App.Services;
 using WorldBirdLauncher.App.ViewModels;
 using WorldBirdLauncher.Core.Models;
@@ -53,10 +52,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private readonly System.Windows.Threading.DispatcherTimer _filterTimer =
         new() { Interval = TimeSpan.FromMilliseconds(250) };
 
-    /// <summary>广告刷新（缓存 8 分钟；接口失败静默用缓存，绝不影响列表）。</summary>
-    private readonly System.Windows.Threading.DispatcherTimer _adsTimer =
-        new() { Interval = TimeSpan.FromMinutes(8) };
-
     /// <summary>当前筛选结果（全量），列表只分批渲染其中的一部分。</summary>
     private List<ServerCardViewModel> _filtered = [];
 
@@ -99,10 +94,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         DataContext = this;
         PreviewKeyDown += OnWindowPreviewKeyDown;
 
-#if LITE
-        Title = AppEdition.ProductName;
-        TitleBrandText.Text = AppEdition.ProductName + " · 我的世界服务器列表";
-#endif
+        Title = "WorldBirdLauncher";
+        TitleBrandText.Text = "WorldBirdLauncher · 我的世界服务器列表";
 
         // 与「启动器」页共用同一份设置与本地数据
         _settings = _session.Settings;
@@ -137,14 +130,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             _ = CheckCatalogUpdatesAsync(initial: true);
             await RefreshAllStatusesAsync();
 
-            // 付费推广：先补发上次没发出去的事件，再拉一次广告（失败静默，列表照常）
-            // 阉割版不展示广告位（用户 2026-10-20 确认），置顶/刷新卡排序仍保留。
-            if (AppEdition.ShowsAds)
-            {
-                _ = _session.Ads.FlushQueueAsync();
-                _ = RefreshAdsAsync();
-            }
-
             // 匿名使用指标：记一次"打开启动器"（只带匿名设备号，失败静默）
             _ = _session.RemoteCatalog.ReportMetricAsync("app_open");
 
@@ -157,8 +142,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _catalogTimer.Tick += (_, _) => _ = CheckCatalogUpdatesAsync(initial: false);
         _catalogTimer.Start();
 
-        _adsTimer.Tick += (_, _) => _ = RefreshAdsAsync();
-        _adsTimer.Start();
         _session.RemoteCatalog.UpdateReady += OnCatalogUpdateReady;
     }
 
@@ -406,7 +389,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _trayIcon = new System.Windows.Forms.NotifyIcon
         {
             Icon = LoadTrayIcon(),
-            Text = AppEdition.ProductName + " · 我的世界服务器列表",
+            Text = "WorldBirdLauncher · 我的世界服务器列表",
             ContextMenuStrip = menu,
             Visible = true,
         };
@@ -1144,21 +1127,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
         _settings.LastServerSort = SortBox?.SelectedIndex ?? 0;
 
-        // 广告位（需求 5.2.4）：只在**没有筛选/搜索**时插入；结果 <10 条不插，<40 条只插第 4 条之后。
-        // 插入的是额外的推广卡，不占用自然条数、不参与排序。
-        //
-        // 默认线路是「电信/联通/移动/未标注」（排除海外）；这组默认值不算"用户主动筛选"，
-        // 否则完整版的广告位会永远不出现。用户改动线路、搜索、勾任何筛选/收藏/延迟后，广告位消失。
-        var natural = query.ToList();
-        var defaultLines = new HashSet<string>(StringComparer.Ordinal) { "电信", "联通", "移动", "未标注" };
-        var lineFiltering = lines.Count > 0 && !lines.SetEquals(defaultLines);
-        var booleanFiltering = customYes || customNo || whitelistYes || whitelistNo || premiumYes || premiumNo;
-        var isFiltering = keyword.Length > 0 || versions.Count > 0 || lineFiltering || booleanFiltering ||
-                          loaders.Count > 0 || categories.Count > 0 || modGroups.Count > 0 ||
-                          latencyFilterActive || favoritesOnly;
-
         // 增量渲染：先只渲染一屏多一点，滚动到底再继续加载，避免一次创建几百个卡片造成卡顿
-        _filtered = isFiltering ? natural : InsertAdCards(natural);
+        _filtered = query.ToList();
         _renderedCount = 0;
         Servers.Clear();
         LoadMoreServerCards();
@@ -1179,7 +1149,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         _ = ProbeLocalLatencyAsync();
     }
 
-    // ---------- 付费推广：拉广告 / 插广告位 / 事件上报 ----------
+    // ---------- 排序加成 ----------
 
     /// <summary>拉一次"排序加成"（置顶/刷新卡），应用到所有卡片后重排列表。</summary>
     private async Task RefreshBoostsAsync()
@@ -1214,130 +1184,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
                 vm.ApplyBoost(null, 0, null, null);
             }
         }
-    }
-
-    /// <summary>拉一次广告；有变化就重排列表（失败静默，不影响自然列表）。</summary>
-    private async Task RefreshAdsAsync()
-    {
-        if (!AppEdition.ShowsAds)
-        {
-            return;
-        }
-
-        try
-        {
-            var changed = await _session.Ads.RefreshAsync();
-            // 首页热门模块的推广位也要跟着更新（不然只有列表页会变）
-            Launcher?.NotifyAdsUpdated();
-            if (changed)
-            {
-                ApplyFilters();
-            }
-        }
-        catch (Exception ex)
-        {
-            App.LogLine($"刷新广告失败：{ex.Message}");
-        }
-    }
-
-    /// <summary>
-    /// 按需求文档 5.2.4 把推广卡插到自然结果里：
-    /// 结果 ≥40 → 第 4 / 20 / 40 条之后各 1 个；结果 ≥10 → 只插第 4 条之后；结果 &lt;10 → 一个都不插。
-    /// </summary>
-    private List<ServerCardViewModel> InsertAdCards(IReadOnlyList<ServerCardViewModel> natural)
-    {
-        if (!AppEdition.ShowsAds)
-        {
-            return natural.ToList();
-        }
-
-        var combined = new List<ServerCardViewModel>(natural.Count + 3);
-        if (natural.Count < 10)
-        {
-            combined.AddRange(natural);
-            return combined;
-        }
-
-        var slots = new List<(int Position, string Slot)> { (4, "list_after_4") };
-        if (natural.Count >= 40)
-        {
-            slots.Add((20, "list_after_20"));
-            slots.Add((40, "list_after_40"));
-        }
-
-        var ads = slots.ToDictionary(
-            item => item.Slot,
-            item => _session.Ads.ForSlot(item.Slot, 1).FirstOrDefault());
-
-        for (var index = 0; index < natural.Count; index++)
-        {
-            combined.Add(natural[index]);
-            var position = index + 1;
-            foreach (var (slotPosition, slot) in slots)
-            {
-                if (slotPosition == position && ads.TryGetValue(slot, out var ad) && ad is not null)
-                {
-                    combined.Add(CreateAdCard(ad));
-                }
-            }
-        }
-
-        return combined;
-    }
-
-    /// <summary>把一条广告包成服务器卡片（与自然卡片同一套模板，右上角显示「推广」）。</summary>
-    private ServerCardViewModel CreateAdCard(AdItem ad)
-    {
-        var entry = new ServerEntry
-        {
-            Id = string.IsNullOrWhiteSpace(ad.ServerId) ? $"ad-{ad.CampaignId}" : ad.ServerId,
-            Name = ad.Title,
-            Address = ad.ServerIp ?? string.Empty,
-            Port = ad.ServerPort ?? 25565,
-            Version = string.Empty,
-            Loader = string.Empty,
-            Description = ad.Description ?? string.Empty,
-            Categories = ad.Tags ?? [],
-            IconUrl = ad.IconUrl,
-            OfficialSite = ad.TargetUrl,
-            IsBuiltIn = false,
-        };
-        var card = new ServerCardViewModel(entry);
-        card.MarkAsAd(ad);
-
-        // 曝光：卡片渲染出来并停留 ≥1 秒才计一次（服务端再按"同设备 24 小时只计一次"去重）
-        _ = ReportExposureAsync(card);
-        return card;
-    }
-
-    private async Task ReportExposureAsync(ServerCardViewModel card)
-    {
-        try
-        {
-            await Task.Delay(1000);
-            if (card.Ad is null || !Servers.Contains(card))
-            {
-                return;
-            }
-
-            _session.Ads.Report(card.Ad, "exposure");
-        }
-        catch (Exception)
-        {
-            // 曝光上报失败不影响界面
-        }
-    }
-
-    private void OnAdNotInterested(object sender, RoutedEventArgs e)
-    {
-        if ((sender as FrameworkElement)?.Tag is not ServerCardViewModel card || card.Ad is null)
-        {
-            return;
-        }
-
-        _session.Ads.Hide(card.Ad);
-        StatusBar.Text = "已隐藏这条推广（7 天内不再显示）。";
-        ApplyFilters();
     }
 
     private async Task RefreshAllStatusesAsync(bool force = false)
@@ -1481,7 +1327,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         {
             var candidates = _filtered
                 .Take(Math.Max(_renderedCount, 24))
-                .Where(v => !v.IsAd && v.Entry.HasAddress && NeedsLocalProbe(v))
+                .Where(v => v.Entry.HasAddress && NeedsLocalProbe(v))
                 .Take(24)
                 .ToList();
             if (candidates.Count == 0)
@@ -1708,11 +1554,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
 
         SelectedServer = server;
-        if (server.Ad is not null)
-        {
-            _session.Ads.Report(server.Ad, "click_detail"); // 点击详情上报（服务端 24 小时去重）
-        }
-
         HeatService.Current.RecordView(server.Id); // 计入热度
         _ = _session.RemoteCatalog.ReportEventAsync("view", server.Id); // 匿名上报（服务端全站榜单）
         RebuildDetailAddresses(server);
@@ -2309,10 +2150,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             Clipboard.SetText(server.EndPoint);
             StatusBar.Text = $"已复制 {server.EndPoint} 到剪贴板。";
             ShowCopyToast($"已复制 IP：{server.EndPoint}");
-            if (server.Ad is not null)
-            {
-                _session.Ads.Report(server.Ad, "click_copy_ip");
-            }
         }
         catch (Exception ex)
         {
@@ -2486,11 +2323,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// <summary>从服务器列表一键启动：填入服务器地址，切到启动器页并尝试启动。</summary>
     private async Task LaunchFromServerAsync(ServerCardViewModel server)
     {
-        if (server.Ad is not null)
-        {
-            _session.Ads.Report(server.Ad, "click_join"); // 进服点击上报（需求事件类型 click_join）
-        }
-
         var endpoint = ResolveEndpoint(server); // 多线路时用用户在详情页选定的线路
         Launcher.PrefillServer(endpoint);
         NavLaunch.IsChecked = true;
@@ -2611,18 +2443,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     /// <summary>本机没有匹配版本：弹预填好的下载确认窗，装完自动切换并放行启动。</summary>
     private async Task<bool> PromptAndInstallVersionAsync(ServerEntry entry, string serverName, string supported)
     {
-        if (!AppEdition.AllowsVersionDownload)
-        {
-            Views.MessageWindow.Info(
-                this,
-                "本机没有匹配版本",
-                $"服务器「{serverName}」支持 {supported}，但本机还没有可用的匹配版本。\n\n" +
-                "WorldBirdLauncher 不提供游戏版本下载：请先用官方启动器安装对应版本，" +
-                "或导入一个自带游戏本体的离线整合包，然后再启动。");
-            StatusBar.Text = $"已取消启动（本机没有 {supported} 的可用版本）：{serverName}";
-            return false;
-        }
-
         var band = Core.Models.VersionSelection.TargetBand(entry);
 
         IReadOnlyList<string> releases;

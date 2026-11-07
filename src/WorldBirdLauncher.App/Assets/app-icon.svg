@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <defs>
+    <path id="ray" d="M0-188C16-150 14-112 0-70C-14-112-16-150 0-188Z"/>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#2B7FFF"/>
+  <g fill="#FFFFFF" transform="translate(256 286)">
+    <use href="#ray" transform="rotate(-76) scale(.82)"/>
+    <use href="#ray" transform="rotate(-57) scale(.92)"/>
+    <use href="#ray" transform="rotate(-38)"/>
+    <use href="#ray" transform="rotate(-19) scale(1.08)"/>
+    <use href="#ray"/>
+    <use href="#ray" transform="rotate(19) scale(1.08)"/>
+    <use href="#ray" transform="rotate(38)"/>
+    <use href="#ray" transform="rotate(57) scale(.92)"/>
+    <use href="#ray" transform="rotate(76) scale(.82)"/>
+  </g>
+  <path fill="#FFFFFF"
+        d="M150 300C170 236 210 204 256 204C302 204 342 236 362 300C332 288 306 302 276 294C270 292 264 292 258 295C226 310 194 291 150 300Z"/>
+  <path fill="#FFFFFF"
+        d="M78 332C126 305 170 321 218 336C263 350 293 315 333 303C373 291 405 311 438 330C402 329 374 343 337 351C295 360 261 337 221 340C170 344 128 365 78 346Z"/>
+  <path fill="#FFFFFF" opacity=".96"
+        d="M118 356C166 334 211 350 252 359C289 367 314 340 351 329C381 320 407 329 427 338C390 337 364 349 334 359C296 371 263 356 226 357C183 359 150 376 118 366Z"/>
+</svg>

@@ -115,7 +115,7 @@ public sealed class GameFileDownloader
         CancellationToken cancellationToken = default)
     {
         using var http = new HttpClient { Timeout = PerFileTimeout };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.1.1 (github.com/Themeda/WorldBirdLauncher)");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.2.0 (github.com/Themeda/WorldBirdLauncher)");
         var health = new DownloadSourceHealth();
 
         try
@@ -183,7 +183,7 @@ public sealed class GameFileDownloader
         CancellationToken cancellationToken = default)
     {
         using var http = new HttpClient { Timeout = PerFileTimeout };
-        http.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.1.1 (github.com/Themeda/WorldBirdLauncher)");
+        http.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.2.0 (github.com/Themeda/WorldBirdLauncher)");
         return await DownloadPlannedAsync(
                 http, new DownloadSourceHealth(), planned, gameRoot, useMirror, concurrency, progress, cancellationToken)
             .ConfigureAwait(false);

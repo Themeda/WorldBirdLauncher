@@ -45,7 +45,6 @@
     <!-- 客户端（Core/App）也要用 Compat\NetCompat 里的那批兼容实现 -->
     <InternalsVisibleTo Include="WorldBirdLauncher.Core" />
     <InternalsVisibleTo Include="WBL" />
-    <InternalsVisibleTo Include="WBL-Pro" />
     <InternalsVisibleTo Include="WorldBirdLauncher.Core.Tests" />
   </ItemGroup>
 

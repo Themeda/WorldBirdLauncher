@@ -13,16 +13,6 @@ namespace WorldBirdLauncher.App.Views;
 
 public partial class LauncherPage : UserControl
 {
-    private static readonly (string Label, AccountKind Kind)[] AccountTypes =
-    [
-        ("微软正版", AccountKind.微软),
-        ("外置登录", AccountKind.外置),
-#if !LITE
-        ("离线账户", AccountKind.离线),
-#endif
-        ("统一通行证", AccountKind.统一通行证),
-    ];
-
     private readonly AppSession _session = AppSession.Current;
     private readonly SkinService _skins = new();
     private readonly ServerStatusProvider _statusProvider = new(enableQuery: false);
@@ -31,7 +21,6 @@ public partial class LauncherPage : UserControl
     private static readonly ServerListPing ServerPing = new();
     private bool _busy;
     private Button? _busyButton;
-    private bool _suppressAccountType;
     private bool _initialized;
 
     public LauncherPage()
@@ -52,7 +41,6 @@ public partial class LauncherPage : UserControl
             if (!_initialized)
             {
                 _initialized = true;
-                BuildAccountTypes();
                 TipText.Text = _session.Tips.Next();
                 _tipTimer.Tick += (_, _) => TipText.Text = _session.Tips.Next();
                 _tipTimer.Start();
@@ -140,44 +128,19 @@ public partial class LauncherPage : UserControl
 
     // ---------- 账户 ----------
 
-    private void BuildAccountTypes()
-    {
-        _suppressAccountType = true;
-        AccountBox.ItemsSource = AccountTypes.Select(t => t.Label).ToList();
-        _suppressAccountType = false;
-        SelectAccountTypeFor(_session.CurrentAccount?.Kind);
-    }
-
-    private void SelectAccountTypeFor(AccountKind? kind)
-    {
-        _suppressAccountType = true;
-        AccountBox.SelectedIndex = kind is null ? -1 : Array.FindIndex(AccountTypes, t => t.Kind == kind.Value);
-        _suppressAccountType = false;
-    }
-
     private void RefreshIdentity()
     {
         var account = _session.CurrentAccount;
         UserNameText.Text = account?.Name ?? "未登录";
         UserTypeText.Text = account is null
-            ? "选择上方账户类型后会自动弹出登录窗口"
-            : account.Kind switch
-            {
-                AccountKind.离线 => "离线账户",
-                AccountKind.外置 => $"外置登录 · {account.ServerUrl}",
-                AccountKind.统一通行证 => "统一通行证",
-                _ => "微软正版账户",
-            };
+            ? "使用 Microsoft 账户登录"
+            : "微软正版账户";
 
         AvatarText.Text = string.IsNullOrWhiteSpace(account?.Name) ? "?" : account!.Name[..1].ToUpperInvariant();
-        _ = RefreshAvatarAsync(account); // 头像按账户类型异步获取（正版/外置查皮肤，离线用首字母）
-        SelectAccountTypeFor(account?.Kind);
+        _ = RefreshAvatarAsync(account);
     }
 
-    /// <summary>
-    /// 头像：正版向 Mojang、外置向对应皮肤站查询皮肤，取皮肤图的头部做头像；
-    /// 离线账户也会拿 ID 去 Mojang 查一次（查得到就用官方头像），查不到保留首字母占位。
-    /// </summary>
+    /// <summary>Loads the Microsoft profile skin and uses its head as the account avatar.</summary>
     private async Task RefreshAvatarAsync(AccountProfile? account)
     {
         if (account is null)
@@ -203,53 +166,9 @@ public partial class LauncherPage : UserControl
         await Dispatcher.InvokeAsync(() => AvatarImage.Source = head);
     }
 
-    private void OnAccountTypeSelected(object sender, SelectionChangedEventArgs e)
+    private bool OpenLogin()
     {
-        if (_suppressAccountType || AccountBox.SelectedIndex < 0 ||
-            AccountBox.SelectedIndex >= AccountTypes.Length)
-        {
-            return;
-        }
-
-        var (label, kind) = AccountTypes[AccountBox.SelectedIndex];
-        var sameKind = _session.AccountList.Where(a => a.Kind == kind).ToList();
-        if (sameKind.Count > 1)
-        {
-            // 同一种登录方式存了多个账号：不替用户挑，直接打开账号列表让他选
-            if (OpenSwitcher())
-            {
-                RefreshIdentity();
-            }
-            else
-            {
-                SelectAccountTypeFor(_session.CurrentAccount?.Kind);
-            }
-
-            return;
-        }
-
-        var existing = sameKind.FirstOrDefault();
-        if (existing is not null)
-        {
-            _session.CurrentAccount = existing;
-            RefreshIdentity();
-            SetStatus($"已切换到 {label} 账户：{existing.Name}");
-            return;
-        }
-
-        if (OpenLogin(kind))
-        {
-            RefreshIdentity();
-        }
-        else
-        {
-            SelectAccountTypeFor(_session.CurrentAccount?.Kind);
-        }
-    }
-
-    private bool OpenLogin(AccountKind kind)
-    {
-        var dialog = new LoginWindow(kind) { Owner = Window.GetWindow(this) };
+        var dialog = new LoginWindow { Owner = Window.GetWindow(this) };
         if (dialog.ShowDialog() != true)
         {
             return false;
@@ -278,7 +197,16 @@ public partial class LauncherPage : UserControl
         return ok;
     }
 
-    private void OnSwitchAccount(object sender, RoutedEventArgs e) => OpenSwitcher();
+    private void OnSwitchAccount(object sender, RoutedEventArgs e)
+    {
+        if (_session.AccountList.Count == 0)
+        {
+            OpenLogin();
+            return;
+        }
+
+        OpenSwitcher();
+    }
 
     /// <summary>没有账户时（首次启动或点了推荐服启动）先引导登录。</summary>
     private Task<bool> EnsureAccountAsync(bool isFirstRun = false)
@@ -288,16 +216,8 @@ public partial class LauncherPage : UserControl
             return Task.FromResult(true);
         }
 
-        if (!AppEdition.AllowsOfflineLogin)
-        {
-            // 阉割版只保留正版 / 外置 / 统一通行证：首次启动不自动弹"离线登录"，
-            // 由用户在上方下拉框里选登录方式（选中后会自动弹出对应登录窗）。
-            SetStatus("还没有登录：请先在上方选择「微软正版 / 外置登录 / 统一通行证」并完成登录。");
-            return Task.FromResult(false);
-        }
-
-        SetStatus(isFirstRun ? "首次启动，请先创建一个离线账户。" : "还没有账户，请先登录。");
-        return Task.FromResult(OpenLogin(AccountKind.离线));
+        SetStatus(isFirstRun ? "首次启动，请先使用 Microsoft 账户登录。" : "还没有账户，请先登录。");
+        return Task.FromResult(OpenLogin());
     }
 
     // ---------- 提示与进度 ----------
@@ -348,12 +268,6 @@ public partial class LauncherPage : UserControl
     {
         try
         {
-            // 付费推广：先把广告拉一次（失败静默），首页热门模块顶部才会带上推广位
-            if (AppEdition.ShowsAds)
-            {
-                await _session.Ads.RefreshAsync();
-            }
-
             BuildHotCandidates();
             await RefreshHotListAsync();
         }
@@ -361,9 +275,6 @@ public partial class LauncherPage : UserControl
         {
         }
     }
-
-    /// <summary>广告刷新后由 <see cref="MainWindow"/> 通知首页重新构建热门列表（带最新的推广位）。</summary>
-    public void NotifyAdsUpdated() => _ = RefreshHotListAsync();
 
     private List<Core.Models.ServerEntry> _hotCandidates = [];
 
@@ -460,38 +371,11 @@ public partial class LauncherPage : UserControl
 
         var items = query.Take(10).Select((e, i) => new HotServerItem(e, i + 1)).ToList();
 
-        // 付费推广（需求 5.2.1）：首页热门模块顶部插 1 个推广位；只在这一栏是"全部"（没筛选）时插。
-        if (AppEdition.ShowsAds && HotCategoryTabs.SelectedIndex == 0)
-        {
-            var ad = _session.Ads.ForSlot("home_hot_top", 1).FirstOrDefault();
-            if (ad is not null)
-            {
-                var adEntry = _hotCandidates.FirstOrDefault(e =>
-                                  string.Equals(e.Id, ad.ServerId, StringComparison.OrdinalIgnoreCase))
-                              ?? new Core.Models.ServerEntry
-                              {
-                                  Id = string.IsNullOrWhiteSpace(ad.ServerId) ? $"ad-{ad.CampaignId}" : ad.ServerId,
-                                  Name = ad.Title,
-                                  Address = ad.ServerIp ?? string.Empty,
-                                  Port = ad.ServerPort ?? 25565,
-                                  Description = ad.Description ?? string.Empty,
-                                  IsBuiltIn = false,
-                              };
-                items.Insert(0, new HotServerItem(adEntry, 0) { Ad = ad });
-                _ = ReportHotAdExposureAsync(items[0]);
-            }
-        }
-
         HotServerList.ItemsSource = items;
 
         // 在线取服务器图标（Ping 返回的 favicon）
         foreach (var item in items)
         {
-            if (item.IsAd)
-            {
-                continue; // 推广位不是"自然推荐"，不做本地 ping
-            }
-
             try
             {
                 var status = await _statusProvider.QueryAsync(item.Entry);
@@ -509,11 +393,6 @@ public partial class LauncherPage : UserControl
         if ((sender as FrameworkElement)?.Tag is not HotServerItem item || _busy)
         {
             return;
-        }
-
-        if (item.Ad is not null)
-        {
-            _session.Ads.Report(item.Ad, "click_join"); // 推广位进服上报
         }
 
         _busyButton = sender as Button;
@@ -539,31 +418,9 @@ public partial class LauncherPage : UserControl
             return;
         }
 
-        if (item.Ad is not null)
-        {
-            _session.Ads.Report(item.Ad, "click_detail");
-        }
-
         if (Window.GetWindow(this) is MainWindow main)
         {
             main.ShowServerDetail(item.Entry);
-        }
-    }
-
-    /// <summary>推广位曝光：卡片显示满 1 秒才算一次（服务端还会按 24 小时去重）。</summary>
-    private async Task ReportHotAdExposureAsync(HotServerItem item)
-    {
-        try
-        {
-            await Task.Delay(1000);
-            if (item.Ad is not null)
-            {
-                _session.Ads.Report(item.Ad, "exposure");
-            }
-        }
-        catch (Exception)
-        {
-            // 曝光失败不影响界面
         }
     }
 
@@ -790,30 +647,15 @@ public partial class LauncherPage : UserControl
         var endpoint = _session.Store.GetPreferredRoute(entry.Id) ?? entry.EndPoint;
         PrefillServer(endpoint); // 写入「启动后进入的服务器」并刷新摘要
 
-        var required = AccountMatcher.RequiredKind(entry);
-        var current = _session.CurrentAccount;
-        if (required is null || current?.Kind == required)
+        if (AccountMatcher.RequiresExternalAccount(entry))
         {
-            SetStatus(restored
-                ? $"已恢复上次选中的服务器：{entry.Name}（启动后将进入 {endpoint}）。"
-                : $"已选中 {entry.Name}：启动后将进入 {endpoint}。");
+            SetStatus($"已选中 {entry.Name}（{endpoint}）。{AccountMatcher.UnsupportedExternalAccountMessage}");
             return;
         }
 
-        var match = _session.AccountList.FirstOrDefault(a => a.Kind == required);
-        if (match is null)
-        {
-            SetStatus($"{(restored ? "已恢复上次选中的服务器：" : "已选中 ")}{entry.Name}（{endpoint}）。"
-                      + $"该服务器需要「{AccountMatcher.Describe(required.Value)}」，"
-                      + "但你还没有这类账户——请点上方「切换账号」先登录一个。");
-            return;
-        }
-
-        _session.CurrentAccount = match; // 触发 AccountChanged → 头像/身份刷新
-        RefreshIdentity();
-        SetStatus($"{(restored ? "已恢复上次选中的服务器：" : "已选中 ")}{entry.Name}："
-                  + $"账号已自动切到「{AccountMatcher.Describe(required.Value)}」{match.Name}，"
-                  + $"直连地址 {endpoint}。确认后点「启动游戏」。");
+        SetStatus(restored
+            ? $"已恢复上次选中的服务器：{entry.Name}（启动后将进入 {endpoint}）。"
+            : $"已选中 {entry.Name}：启动后将进入 {endpoint}。");
     }
 
     /// <summary>同步卡片的选中标记与「移除所选」按钮的显隐。</summary>
@@ -909,7 +751,7 @@ public partial class LauncherPage : UserControl
         if (_session.CurrentAccount is { } signedOutCandidate && AccountService.IsSignedOut(signedOutCandidate))
         {
             SetStatus($"账户「{signedOutCandidate.Name}」已登出，请重新登录后再启动。");
-            if (!OpenLogin(signedOutCandidate.Kind))
+            if (!OpenLogin())
             {
                 return;
             }
@@ -917,7 +759,7 @@ public partial class LauncherPage : UserControl
 
         // 微软正版账户：access token 快到期时先用 refresh_token 静默续期（免二次授权）。
         // 审核通过前这一步同样会 403，失败就引导重新登录并给出原因。
-        if (_session.CurrentAccount is { Kind: AccountKind.微软 } microsoft &&
+        if (_session.CurrentAccount is { } microsoft &&
             microsoft.MicrosoftExpiresAt is { } expiresAt &&
             expiresAt <= DateTimeOffset.Now.AddMinutes(5) &&
             !string.IsNullOrWhiteSpace(microsoft.MicrosoftRefreshToken))
@@ -931,7 +773,7 @@ public partial class LauncherPage : UserControl
             catch (Exception ex)
             {
                 SetStatus($"微软登录已过期，需要重新登录：{ex.Message}");
-                if (!OpenLogin(AccountKind.微软))
+                if (!OpenLogin())
                 {
                     return;
                 }
@@ -941,34 +783,15 @@ public partial class LauncherPage : UserControl
         // 本次启动的"直连目标"：只有勾选了「最近玩过的服务器」、且要进的地址就是它时才算
         var launchTarget = ResolveRecentLaunchTarget();
 
-        // 账号适配：服务器要正版账号、你当前用的是外置/离线时，**先提醒再由用户决定**
-        // （继续启动 / 去登录）。以前只在选中卡片时提示一句、启动照样跑，
-        // 用户会以为已经拦住了 —— 2026-10-08 反馈。
-        if (launchTarget is not null && _session.CurrentAccount is { } currentAccount)
+        if (launchTarget is not null && AccountMatcher.RequiresExternalAccount(launchTarget))
         {
-            var neededKind = AccountMatcher.RequiredKind(launchTarget);
-            if (neededKind is { } kind && currentAccount.Kind != kind)
-            {
-                var proceed = MessageWindow.Confirm(
-                    Window.GetWindow(this),
-                    "账号可能不匹配",
-                    $"服务器「{launchTarget.Name}」需要「{AccountMatcher.Describe(kind)}」账号，\n" +
-                    $"而你当前用的是「{AccountMatcher.Describe(currentAccount.Kind)}」{currentAccount.Name}。\n\n" +
-                    "用不匹配的账号启动，进服时可能会被服务器拒绝。\n" +
-                    "可以先去登录对应类型的账号，也可以直接继续启动。",
-                    "继续启动",
-                    "去登录");
-                if (!proceed)
-                {
-                    if (!OpenLogin(kind))
-                    {
-                        SetStatus($"已取消启动：{launchTarget.Name} 需要「{AccountMatcher.Describe(kind)}」账号。");
-                        return;
-                    }
-
-                    SetStatus($"已登录 {_session.CurrentAccount?.DisplayText}，继续启动 {launchTarget.Name}…");
-                }
-            }
+            MessageWindow.Info(
+                Window.GetWindow(this),
+                "无法启动该服务器",
+                $"服务器「{launchTarget.Name}」需要外部账户。\n\n" +
+                "当前公开版仅支持 Microsoft 账户，因此不会使用不匹配的账户进入服务器。");
+            SetStatus($"已取消启动：{launchTarget.Name} 需要外部账户，当前公开版无法连接。");
+            return;
         }
 
         if (string.IsNullOrWhiteSpace(_session.CurrentVersionId))
@@ -1219,12 +1042,7 @@ public sealed class HotServerItem : System.ComponentModel.INotifyPropertyChanged
 
     public int Rank { get; }
 
-    /// <summary>推广位时非 null（首页热门模块顶部的那张卡）。</summary>
-    public WorldBirdLauncher.App.Ads.AdItem? Ad { get; init; }
-
-    public bool IsAd => Ad is not null;
-
-    public string RankText => IsAd ? "推广" : $"TOP{Rank}";
+    public string RankText => $"TOP{Rank}";
 
     public string Name => Entry.Name;
 
@@ -1236,9 +1054,7 @@ public sealed class HotServerItem : System.ComponentModel.INotifyPropertyChanged
 
     public string RegionText => Entry.Region;
 
-    public string CategoryText => IsAd && !string.IsNullOrWhiteSpace(Ad!.Description)
-        ? Ad!.Description!
-        : string.Join(" · ", Entry.Categories);
+    public string CategoryText => string.Join(" · ", Entry.Categories);
 
     public string Initial => string.IsNullOrWhiteSpace(Entry.Name) ? "?" : Entry.Name[..1].ToUpperInvariant();
 

@@ -1,79 +1,50 @@
 <Window x:Class="WorldBirdLauncher.App.Views.LoginWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="登录" SizeToContent="Height" MinHeight="330" MaxHeight="720" Width="440" ResizeMode="NoResize"
-        WindowStartupLocation="CenterOwner" WindowStyle="None" AllowsTransparency="True"
-        Background="Transparent" FontFamily="Microsoft YaHei UI, Segoe UI">
-    <Border Background="{DynamicResource BgBrush}" CornerRadius="12" BorderBrush="{DynamicResource BorderBrush2}"
-            BorderThickness="1">
-        <Grid Margin="20">
+        Title="微软正版登录" Width="420" SizeToContent="Height"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        ResizeMode="NoResize" ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
+    <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
+            BorderThickness="1" CornerRadius="12" Padding="20">
+        <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
-                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0">
-                <TextBlock x:Name="TitleText" Text="登录" FontSize="16" FontWeight="SemiBold"
+                <TextBlock x:Name="TitleText" Text="微软正版登录" FontSize="16" FontWeight="SemiBold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <Button Content="✕" Style="{StaticResource CloseTitleBarButton}" HorizontalAlignment="Right"
                         Click="OnCancel" />
             </Grid>
 
             <TextBlock x:Name="HintText" Grid.Row="1" FontSize="11" Margin="0,8,0,0" TextWrapping="Wrap"
-                       Foreground="{DynamicResource TextMutedBrush}" />
+                       Foreground="{DynamicResource TextMutedBrush}"
+                       Text="微软账号授权后即可正版进服。启动器不会接触你的账号密码——授权在微软官方页面完成。" />
 
-            <!-- 表单区自己滚动：窗口高度被屏幕工作区限制时，密码框不会被挤出可视区（底部按钮始终可见） -->
-            <ScrollViewer Grid.Row="2" Margin="0,12,0,0" VerticalScrollBarVisibility="Auto"
-                          HorizontalScrollBarVisibility="Disabled">
-            <StackPanel>
-                <!-- 微软正版登录：授权代码流 + PKCE，由系统浏览器完成授权 -->
-                <StackPanel x:Name="MicrosoftPanel" Visibility="Collapsed">
-                    <TextBlock Text="系统浏览器会自动打开微软授权页" FontSize="11" Margin="0,0,0,4"
-                               Foreground="{DynamicResource TextSecondaryBrush}" />
-                    <TextBlock x:Name="MsUrlText" FontSize="12" TextWrapping="Wrap"
-                               Foreground="{DynamicResource AccentBrush}" />
-                    <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                        <Button x:Name="MsOpenButton" Content="重新打开浏览器" Height="30" Padding="12,0"
-                                Style="{StaticResource GhostButton}" Click="OnOpenMicrosoftPage" />
-                        <Button x:Name="MsRetryButton" Content="重新开始" Height="30" Margin="8,0,0,0" Padding="12,0"
-                                Style="{StaticResource GhostButton}" Click="OnRetryMicrosoftCode" />
-                    </StackPanel>
-                    <TextBlock Text="请勿同时打开其他网页；若收到 state 校验失败提示，请关闭其他页面后重新开始。"
-                               FontSize="10" Margin="0,10,0,0" TextWrapping="Wrap"
-                               Foreground="{DynamicResource TextMutedBrush}" />
-                    <TextBlock x:Name="MsStatusText" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap"
-                               Foreground="{DynamicResource TextMutedBrush}" />
+            <StackPanel Grid.Row="2" Margin="0,16,0,0">
+                <TextBlock Text="系统浏览器会自动打开微软授权页" FontSize="11" Margin="0,0,0,6"
+                           Foreground="{DynamicResource TextSecondaryBrush}" />
+                <TextBlock x:Name="MsUrlText" FontSize="12" TextWrapping="Wrap"
+                           Foreground="{DynamicResource AccentBrush}" />
+                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                    <Button x:Name="MsOpenButton" Content="重新打开浏览器" Height="30" Padding="12,0"
+                            Style="{StaticResource GhostButton}" Click="OnOpenMicrosoftPage" />
+                    <Button x:Name="MsRetryButton" Content="重新开始" Height="30" Margin="8,0,0,0" Padding="12,0"
+                            Style="{StaticResource GhostButton}" Click="OnRetryMicrosoftCode" />
                 </StackPanel>
-
-                <TextBlock x:Name="ServerLabel" Text="皮肤站地址" FontSize="11" Margin="0,0,0,4"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBox x:Name="ServerUrlBox" Height="30" Text="https://littleskin.cn/api/yggdrasil" />
-
-                <TextBlock x:Name="ServerIdLabel" Text="服务器 ID（32 位，由服主提供）" FontSize="11" Margin="0,10,0,4"
-                           Foreground="{DynamicResource TextSecondaryBrush}" Visibility="Collapsed" />
-                <TextBox x:Name="ServerIdBox" Height="30" Visibility="Collapsed" />
-
-                <TextBlock x:Name="UserLabel" Text="游戏名" FontSize="11" Margin="0,10,0,4"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                <TextBox x:Name="UserBox" Height="30" />
-
-                <TextBlock x:Name="PasswordLabel" Text="密码" FontSize="11" Margin="0,10,0,4"
-                           Foreground="{DynamicResource TextSecondaryBrush}" />
-                <PasswordBox x:Name="PasswordBox" Height="30" />
-
-                <TextBlock x:Name="StatusText" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap"
-                           Foreground="{DynamicResource DangerBrush}" />
+                <TextBlock Text="请勿同时打开其他授权页面；若收到 state 校验失败提示，请关闭其他页面后重新开始。"
+                           FontSize="10" Margin="0,10,0,0" TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextMutedBrush}" />
+                <TextBlock x:Name="MsStatusText" FontSize="11" Margin="0,10,0,0" TextWrapping="Wrap"
+                           Foreground="{DynamicResource TextMutedBrush}" />
             </StackPanel>
-            </ScrollViewer>
 
-            <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,12,0,0">
-                <Button x:Name="LoginButton" Content="登录" Width="96" Height="32"
-                        Style="{StaticResource PrimaryButton}" Click="OnLogin" />
-                <Button Content="取消" Width="96" Height="32" Margin="8,0,0,0"
-                        Style="{StaticResource GhostButton}" Click="OnCancel" />
-            </StackPanel>
+            <Button Grid.Row="3" Content="取消" Width="96" Height="32" Margin="0,16,0,0"
+                    HorizontalAlignment="Right" Style="{StaticResource GhostButton}" Click="OnCancel" />
         </Grid>
     </Border>
 </Window>

@@ -1,89 +1,88 @@
-using System.Net;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 using WorldBirdLauncher.Core.Launcher;
 
 namespace WorldBirdLauncher.Core.Tests;
 
-/// <summary>
-/// 登录相关的纯逻辑回归（2026-10-06 第二十五轮：离线 + 统一通行证自研，Core 彻底不依赖 StarLight）。
-/// 统一通行证的接口是 Yggdrasil 那一套：<c>POST {站点}/&lt;服务器ID&gt;/authserver/authenticate</c>。
-/// </summary>
-public class AccountLoginTests
+public sealed class AccountLoginTests : IDisposable
 {
-    [Theory]
-    [InlineData("https://auth.mc-user.com:233/")]
-    [InlineData("https://auth.mc-user.com:233")]          // 少个斜杠
-    [InlineData("auth.mc-user.com:233")]                  // 没写协议
-    public void 统一通行证登录地址会被补齐(string baseUrl) =>
-        Assert.Equal(
-            "https://auth.mc-user.com:233/SERVER/authserver/authenticate",
-            UnifiedPassAuth.BuildAuthenticateUrl(baseUrl, "SERVER"));
+    private readonly string _root = Path.Combine(
+        Path.GetTempPath(),
+        "wbl-account-tests-" + Guid.NewGuid().ToString("N"));
 
     [Fact]
-    public void 统一通行证请求体形状与Yggdrasil一致()
+    public void Microsoft账户可加密保存并恢复()
     {
-        using var document = System.Text.Json.JsonDocument.Parse(
-            UnifiedPassAuth.BuildRequestBody("JarnoHawk", "secret"));
-        var root = document.RootElement;
+        var service = new AccountService(_root);
+        var profile = new AccountProfile
+        {
+            Name = "Tester",
+            Uuid = "11111111222233334444555566667777",
+            AccessToken = "minecraft-access",
+            MicrosoftRefreshToken = "refresh-token",
+            MicrosoftExpiresAt = DateTimeOffset.Now.AddHours(1),
+        };
 
-        Assert.Equal("WorldBirdLauncher", root.GetProperty("agent").GetProperty("name").GetString());
-        Assert.Equal("JarnoHawk", root.GetProperty("username").GetString());
-        Assert.Equal("secret", root.GetProperty("password").GetString());
-        Assert.True(root.GetProperty("requestUser").GetBoolean());
-        Assert.Equal(System.Text.Json.JsonValueKind.Null, root.GetProperty("clientToken").ValueKind);
+        service.Save([profile]);
+        var restored = Assert.Single(service.Load());
+
+        Assert.Equal(profile.Name, restored.Name);
+        Assert.Equal(profile.Uuid, restored.Uuid);
+        Assert.Equal(profile.AccessToken, restored.AccessToken);
+        Assert.Equal(profile.MicrosoftRefreshToken, restored.MicrosoftRefreshToken);
     }
 
     [Fact]
-    public void 统一通行证成功响应按selectedProfile的id取UUID()
+    public void 旧账户文件只迁移Microsoft条目并清除旧认证字段()
     {
-        // 真实响应形状（StarLight 的模型读的是 uuid，所以那条路一直是空的）
-        const string json = """
-            {
-              "accessToken": "token-123",
-              "clientToken": "client-456",
-              "availableProfiles": [ { "id": "11111111222233334444555566667777", "name": "JarnoHawk" } ],
-              "selectedProfile": { "id": "11111111222233334444555566667777", "name": "JarnoHawk" },
-              "user": { "id": "abcdef" }
-            }
+        Directory.CreateDirectory(_root);
+        const string legacyJson = """
+            [
+              {"Kind":0,"Name":"LegacyLocal","Uuid":"local","AccessToken":"local-token","ClientToken":"client"},
+              {"Kind":1,"Name":"LegacyMicrosoft","Uuid":"msa","AccessToken":"msa-token","ClientToken":"","MicrosoftRefreshToken":"refresh"},
+              {"Kind":2,"Name":"LegacyExternal","Uuid":"external","AccessToken":"external-token","ServerUrl":"https://example.invalid"},
+              {"Kind":3,"Name":"LegacyPortal","Uuid":"portal","AccessToken":"portal-token","UnifiedPassServerId":"server-id"}
+            ]
             """;
+        var protectedBytes = ProtectedData.Protect(
+            Encoding.UTF8.GetBytes(legacyJson), null, DataProtectionScope.CurrentUser);
+        File.WriteAllBytes(Path.Combine(_root, "accounts.dat"), protectedBytes);
 
-        var profile = UnifiedPassAuth.ParseResponse(json, "4031fd748f9f11ea908800163e095b49");
+        var service = new AccountService(_root);
+        var restored = Assert.Single(service.Load());
 
-        Assert.Equal(AccountKind.统一通行证, profile.Kind);
-        Assert.Equal("JarnoHawk", profile.Name);
-        Assert.Equal("11111111222233334444555566667777", profile.Uuid);
-        Assert.Equal("token-123", profile.AccessToken);
-        Assert.Equal("client-456", profile.ClientToken);
-        Assert.Equal("4031fd748f9f11ea908800163e095b49", profile.UnifiedPassServerId);
+        Assert.Equal("LegacyMicrosoft", restored.Name);
+        Assert.Equal("msa-token", restored.AccessToken);
+
+        var rewritten = ProtectedData.Unprotect(
+            File.ReadAllBytes(Path.Combine(_root, "accounts.dat")), null, DataProtectionScope.CurrentUser);
+        var rewrittenJson = Encoding.UTF8.GetString(rewritten);
+        Assert.DoesNotContain("LegacyLocal", rewrittenJson);
+        Assert.DoesNotContain("LegacyExternal", rewrittenJson);
+        Assert.DoesNotContain("LegacyPortal", rewrittenJson);
+        Assert.DoesNotContain("\"Kind\"", rewrittenJson);
+        Assert.DoesNotContain("\"ClientToken\"", rewrittenJson);
+        Assert.DoesNotContain("\"ServerUrl\"", rewrittenJson);
+        Assert.DoesNotContain("\"UnifiedPassServerId\"", rewrittenJson);
     }
 
     [Fact]
-    public void 统一通行证失败文案优先用服务端的errorMessage()
+    public void 登出会清除本地Microsoft凭据但保留账号条目()
     {
-        Assert.Contains("密码错误", UnifiedPassAuth.TranslateError(
-            HttpStatusCode.Forbidden, """{"error":"ForbiddenOperationException","errorMessage":"密码错误"}"""));
-        Assert.Contains("账号或密码", UnifiedPassAuth.TranslateError(HttpStatusCode.Forbidden, "not-json"));
-        Assert.Contains("服务器 ID", UnifiedPassAuth.TranslateError(HttpStatusCode.NotFound, string.Empty));
-    }
+        var service = new AccountService(_root);
+        var signedOut = service.SignOut(new AccountProfile
+        {
+            Name = "Tester",
+            Uuid = "11111111222233334444555566667777",
+            AccessToken = "minecraft-access",
+            MicrosoftRefreshToken = "refresh-token",
+        }).Single();
 
-    [Fact]
-    public void 离线UUID是官方值()
-    {
-        // 官方规则：MD5("OfflinePlayer:" + 名字)，大端十六进制拼成带横线的 UUID
-        Assert.Equal("b50ad385-829d-3141-a216-7e7d7539ba7f", AccountService.OfflineUuid("Notch"));
-        Assert.Equal(AccountService.OfflineUuid("Tester"), AccountService.OfflineUuid("Tester")); // 同名同 UUID
-        Assert.NotEqual(AccountService.OfflineUuid("Tester"), AccountService.OfflineUuid("tester"));
-    }
-
-    [Fact]
-    public void 离线登录产出可用的账户档案()
-    {
-        var profile = new AccountService().LoginOffline(" Tester ");
-
-        Assert.Equal(AccountKind.离线, profile.Kind);
-        Assert.Equal("Tester", profile.Name);
-        Assert.Equal(AccountService.OfflineUuid("Tester"), profile.Uuid);
-        Assert.False(string.IsNullOrWhiteSpace(profile.AccessToken));
-        Assert.False(string.IsNullOrWhiteSpace(profile.ClientToken));
+        Assert.True(AccountService.IsSignedOut(signedOut));
+        Assert.Empty(signedOut.MicrosoftRefreshToken ?? string.Empty);
+        Assert.Null(signedOut.MicrosoftExpiresAt);
+        Assert.Equal("Tester", Assert.Single(service.Load()).Name);
     }
 
     [Theory]
@@ -102,5 +101,20 @@ public class AccountLoginTests
             ForgeInstallerService.VersionId(ForgeInstallerService.LoaderKind.Forge, "1.21.1", "25.0.53"));
         Assert.Equal("1.21.1-quilt-loader_0.24.0", GameInstallationService.QuiltVersionId("1.21.1", "0.24.0"));
         Assert.Equal("1.21.1-fabric-loader_0.19.5", GameInstallationService.FabricVersionId("1.21.1", "0.19.5"));
+    }
+
+    public void Dispose()
+    {
+        try
+        {
+            if (Directory.Exists(_root))
+            {
+                Directory.Delete(_root, recursive: true);
+            }
+        }
+        catch
+        {
+            // Test cleanup is best effort.
+        }
     }
 }

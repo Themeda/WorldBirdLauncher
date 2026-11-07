@@ -3,15 +3,16 @@
 # WorldBirdLauncher
 
 WorldBirdLauncher（WBL）是一个面向 Windows 10/11 的 Minecraft 服务器列表与启动器客户端。
-仓库内容为 **2026-11-05 的 WorldBirdLauncher 客户端源码快照**，使用 MIT License。
+仓库内容为 **2026-11-07 的 WorldBirdLauncher 0.2.0 客户端源码快照**，使用 MIT License。
 
 ## 当前客户端能力
 
 - 从服务端目录浏览、搜索、筛选和排序 Minecraft 服务器。
 - 显示服务器状态、MOTD、线路、加载器、版本与收录信息。
 - 支持本机延迟测试、收藏、历史记录和服务器详情大图。
-- 支持微软正版、外置 Yggdrasil、统一通行证登录；当前公开版本不提供离线登录。
+- **仅支持 Microsoft 账户认证。** 其他账户类型及相关入口均已移除。
 - 微软登录使用系统浏览器、授权代码流、PKCE 和临时回环端口回调。
+- 声明需要外部账户的服务器仍会显示，但启动器会明确提示并阻止错误启动。
 - 支持 Java 检测、版本隔离、完整性检查、游戏启动和直连进服。
 - 支持 Fabric、Quilt、Forge、NeoForge 与 OptiFine 安装。
 - 支持整合包导入、模组搜索与下载，以及资源下载队列。
@@ -36,12 +37,6 @@ WorldBirdLauncher（WBL）是一个面向 Windows 10/11 的 Minecraft 服务器�
 dotnet build WBL.sln
 ```
 
-仅构建当前公开版本：
-
-```powershell
-dotnet build src\WorldBirdLauncher.App\WorldBirdLauncher.App.csproj -p:LiteEdition=true
-```
-
 ## 测试
 
 ```powershell
@@ -51,16 +46,18 @@ dotnet test tests\WorldBirdLauncher.Core.Tests\WorldBirdLauncher.Core.Tests.cspr
 ## 生成 net48 单文件
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\pack-net48.ps1 -Lite -Out publish\_staging-lite
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\pack-net48.ps1 -Out publish\wbl-0.2.0
 ```
 
 产物：
 
 ```text
-publish\_staging-lite\WBL.exe
+publish\wbl-0.2.0\WBL.exe
 ```
 
-打包脚本会把运行时依赖压缩后附加到 exe 尾部，启动时由程序内置的 AssemblyResolve 入口加载。
+唯一发行目标是 `WBL.exe`。打包脚本会把运行时依赖压缩后附加到 exe 尾部，启动时由程序内置的
+AssemblyResolve 入口加载。图标源文件为 `src/WorldBirdLauncher.App/Assets/app-icon.svg`，
+应用程序图标包含 16、24、32、48、64、128、256 像素尺寸。
 
 ## 项目结构
 

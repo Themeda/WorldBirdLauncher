@@ -7,8 +7,8 @@ namespace WorldBirdLauncher.App.Services;
 /// <summary>
 /// 本机指定的皮肤文件。
 ///
-/// 离线账户的 ID 不是正版时，Mojang / 皮肤站都查不到皮肤，头像与 3D 预览就只剩首字母 / 默认皮肤。
-/// 这里给用户一个兜底：自己挑一张皮肤 PNG，按「账户类型 + 账户名」记住。
+/// 当官方皮肤暂时不可用时，用户仍可为头像与 3D 预览指定一张本地皮肤。
+/// 这里只按账号身份记住文件路径。
 /// **只记路径，不拷贝文件**（用户的皮肤文件仍在自己磁盘上）。
 /// </summary>
 internal static class LocalSkinStore
@@ -58,7 +58,7 @@ internal static class LocalSkinStore
     }
 
     private static string KeyOf(AccountProfile account) =>
-        $"{account.Kind}:{account.Name}".ToLowerInvariant();
+        (string.IsNullOrWhiteSpace(account.Uuid) ? account.Name : account.Uuid).ToLowerInvariant();
 
     private static Dictionary<string, string> Load()
     {

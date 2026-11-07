@@ -48,9 +48,6 @@ public sealed class AppSettings
     /// <summary>界面主题：light（浅色）/ dark（深色）/ system（跟随系统）。</summary>
     public string ThemeMode { get; set; } = "light";
 
-    /// <summary>上次使用的账户类型（配合 <see cref="LastAccountName"/> 在启动时恢复）。</summary>
-    public string? LastAccountKind { get; set; }
-
     /// <summary>上次使用的账户名。</summary>
     public string? LastAccountName { get; set; }
 

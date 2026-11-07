@@ -3,15 +3,17 @@
 # WorldBirdLauncher
 
 WorldBirdLauncher (WBL) is a Minecraft server browser and launcher client for Windows 10 and 11.
-This repository contains a source snapshot of the WorldBirdLauncher client dated **2026-11-05** and is licensed under the MIT License.
+This repository contains the **0.2.0** WorldBirdLauncher client source snapshot dated **2026-11-07**
+and is licensed under the MIT License.
 
 ## Current client features
 
 - Browse, search, filter, and sort Minecraft servers from the server-delivered catalog.
 - Display server status, MOTD, connection routes, mod loaders, versions, and listing information.
 - Support local latency testing, favorites, play history, and full-size server-detail images.
-- Support Microsoft, external Yggdrasil, and UnifiedPass login; the current public edition does not provide offline login.
+- **Microsoft accounts are the only supported authentication method.** All other account types have been removed.
 - Microsoft login uses the authorization code flow with PKCE through the system browser and an ephemeral loopback callback.
+- Servers that declare an external account requirement remain visible, but WBL clearly blocks launching them.
 - Support Java detection, version isolation, integrity checks, game launching, and direct server join.
 - Support installing Fabric, Quilt, Forge, NeoForge, and OptiFine.
 - Support modpack imports, mod search and downloads, and a resource download queue.
@@ -36,12 +38,6 @@ Run the following from the repository root:
 dotnet build WBL.sln
 ```
 
-To build only the current public edition:
-
-```powershell
-dotnet build src\WorldBirdLauncher.App\WorldBirdLauncher.App.csproj -p:LiteEdition=true
-```
-
 ## Test
 
 ```powershell
@@ -51,16 +47,19 @@ dotnet test tests\WorldBirdLauncher.Core.Tests\WorldBirdLauncher.Core.Tests.cspr
 ## Create the net48 single-file executable
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts\pack-net48.ps1 -Lite -Out publish\_staging-lite
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\pack-net48.ps1 -Out publish\wbl-0.2.0
 ```
 
 Output:
 
 ```text
-publish\_staging-lite\WBL.exe
+publish\wbl-0.2.0\WBL.exe
 ```
 
-The packaging script appends the compressed runtime dependencies to the end of the executable. At startup, the built-in AssemblyResolve entry point loads them.
+The single distribution target is `WBL.exe`. The packaging script appends the compressed runtime
+dependencies to the executable, and the built-in AssemblyResolve entry point loads them at startup.
+The icon source is `src/WorldBirdLauncher.App/Assets/app-icon.svg`; the application icon contains
+16, 24, 32, 48, 64, 128, and 256 pixel variants.
 
 ## Project structure
 

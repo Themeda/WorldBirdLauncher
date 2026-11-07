@@ -22,10 +22,10 @@ public static class AppInfo
     public const string CatalogClientKey = "wbl-public-client";
 
     /// <summary>
-    /// 官网「服主入口」页。客户端设置页的「提交服务器」改成跳这里——
+    /// 官网「服主入口」页。客户端设置页的「提交服务器」跳转到这里——
     /// 引导用户注册/登录后，在服主后台提交新服务器（用户 2026-10-10 要求）。
     /// </summary>
-    public const string AdvertiserEntryUrl = "https://worldcraft.com.cn/advertiser/";
+    public const string ServerOwnerEntryUrl = "https://worldcraft.com.cn/advertiser/";
 
     /// <summary>客户端版本（匿名指标上报时带上，用来分版本看数据）。</summary>
     public static string ClientVersion =>

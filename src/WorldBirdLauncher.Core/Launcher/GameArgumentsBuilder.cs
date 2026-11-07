@@ -1,5 +1,4 @@
 using System.IO.Compression;
-using System.Net.Http;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.Win32;
@@ -13,7 +12,7 @@ public sealed record GameLaunchArguments(
     string ClientJarPath,
     string MainClass)
 {
-    /// <summary>构建过程中的非致命问题（例如外置登录的 authlib-injector 下载不到），调用方应展示给用户。</summary>
+    /// <summary>Non-fatal issues encountered while building launch arguments.</summary>
     public IReadOnlyList<string> Warnings { get; init; } = [];
 }
 
@@ -34,14 +33,6 @@ public sealed record GameLaunchArguments(
 /// </summary>
 public sealed class GameArgumentsBuilder : IDisposable
 {
-    private const string AuthlibLatestUrl = "https://authlib-injector.yushi.moe/artifact/latest.json";
-    private const string Nide8AuthUrl = "https://login.mc-user.com:233/index/jar";
-
-    /// <summary>登录注入器（authlib-injector / nide8auth）的下载上限：网络不通时不能把启动卡住。</summary>
-    private static readonly TimeSpan AgentDownloadTimeout = TimeSpan.FromSeconds(20);
-
-    private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromMinutes(5) };
-
     private static readonly Regex OptionWithPlaceholder = new(@"--[A-Za-z][A-Za-z0-9-]*\s+\$\{[^}]+\}", RegexOptions.Compiled);
     private static readonly Regex LeftoverPlaceholder = new(@"\$\{[^}]+\}", RegexOptions.Compiled);
     private static readonly Regex RepeatedSpace = new(@"[ ]{2,}", RegexOptions.Compiled);
@@ -151,7 +142,7 @@ public sealed class GameArgumentsBuilder : IDisposable
 
     // ---------- JVM 段 ----------
 
-    private async Task<string> BuildJvmSegmentAsync(
+    private Task<string> BuildJvmSegmentAsync(
         AccountProfile account,
         string nativesDirectory,
         string launcherBrand,
@@ -160,36 +151,6 @@ public sealed class GameArgumentsBuilder : IDisposable
         CancellationToken cancellationToken)
     {
         var args = new List<string>();
-
-        // 账户专属 javaagent：统一通行证 → nide8auth，外置登录 → authlib-injector（与 StarLight 相同）
-        var agentDirectory = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "WorldBirdLauncher", "agent");
-        if (account.Kind == AccountKind.统一通行证)
-        {
-            var agent = await EnsureAgentAsync(
-                    Path.Combine(agentDirectory, "nide8auth.jar"), Nide8AuthUrl, cancellationToken)
-                .ConfigureAwait(false);
-            if (agent is not null)
-            {
-                args.Add($"-javaagent:\"{agent}\"={account.UnifiedPassServerId}");
-            }
-            else
-            {
-                warnings.Add("没能准备好 nide8auth.jar（网络不通？），本次启动不会注入统一通行证，游戏内可能登录失败。");
-            }
-        }
-        else if (account.Kind == AccountKind.外置)
-        {
-            var agent = await EnsureAuthlibInjectorAsync(agentDirectory, cancellationToken).ConfigureAwait(false);
-            if (agent is not null)
-            {
-                args.Add($"-javaagent:\"{agent}\"={account.ServerUrl}");
-            }
-            else
-            {
-                warnings.Add("没能准备好 authlib-injector.jar（网络不通？），本次启动不会注入外置登录，游戏内可能登录失败。");
-            }
-        }
 
         if (_chain.Self.IsNewVersion)
         {
@@ -224,7 +185,7 @@ public sealed class GameArgumentsBuilder : IDisposable
         // 差异点①：StarLight 这里会插一段 `-Doolloo.jlw.tmpdir="…" -jar "…launch_wrapper.jar"`，我们不用它。
         args.Add(MainClass);
 
-        return string.Join(" ", args);
+        return Task.FromResult(string.Join(" ", args));
     }
 
     /// <summary>
@@ -465,7 +426,7 @@ public sealed class GameArgumentsBuilder : IDisposable
             ["${assets_index_name}"] = ResolveAssetsIndexName(),
             ["${auth_uuid}"] = ResolveUuid(account).Replace("-", string.Empty),
             ["${auth_access_token}"] = ResolveAccessToken(account),
-            ["${user_type}"] = account.Kind == AccountKind.微软 ? "msa" : "Mojang",
+            ["${user_type}"] = "msa",
             ["${version_type}"] = $"\"{versionTypePrefix}/{ToTitleCase(ResolveVersionType())}\"",
             ["${user_properties}"] = "{}",
             ["${game_directory}"] = $"\"{gameDirectory}\"",
@@ -776,11 +737,7 @@ public sealed class GameArgumentsBuilder : IDisposable
             return account.Uuid;
         }
 
-        var hash = NetCompat.Md5(
-            System.Text.Encoding.UTF8.GetBytes("OfflinePlayer:" + account.Name));
-        hash[6] = (byte)((hash[6] & 0x0F) | 0x30);
-        hash[8] = (byte)((hash[8] & 0x3F) | 0x80);
-        return NetCompat.ToHexString(hash).ToLowerInvariant();
+        return string.Empty;
     }
 
     private string ResolveClientJarPath()
@@ -803,66 +760,6 @@ public sealed class GameArgumentsBuilder : IDisposable
 
         var root = _chain.Entries.Count > 1 ? _chain.Entries[^1] : _chain.Self;
         return Path.Combine(_root, "versions", root.Id, root.Id + ".jar");
-    }
-
-    private static async Task<string?> EnsureAgentAsync(
-        string targetPath,
-        string url,
-        CancellationToken cancellationToken)
-    {
-        if (File.Exists(targetPath) && new FileInfo(targetPath).Length > 0)
-        {
-            return targetPath;
-        }
-
-        try
-        {
-            Directory.CreateDirectory(Path.GetDirectoryName(targetPath)!);
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(AgentDownloadTimeout); // 网络不通时别把"点启动 → 进游戏"卡住几分钟
-            var bytes = await Http.GetByteArrayAsync(url, timeout.Token).ConfigureAwait(false);
-            if (bytes.Length == 0)
-            {
-                return null;
-            }
-
-            await NetCompat.WriteAllBytesAsync(targetPath, bytes, timeout.Token).ConfigureAwait(false);
-            return targetPath;
-        }
-        catch (Exception)
-        {
-            return null; // 下载不到就不加 javaagent：让游戏用原版方式启动，总比起不来好
-        }
-    }
-
-    private static async Task<string?> EnsureAuthlibInjectorAsync(
-        string agentDirectory,
-        CancellationToken cancellationToken)
-    {
-        var targetPath = Path.Combine(agentDirectory, "authlib-injector.jar");
-        if (File.Exists(targetPath) && new FileInfo(targetPath).Length > 0)
-        {
-            return targetPath;
-        }
-
-        try
-        {
-            using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeout.CancelAfter(AgentDownloadTimeout);
-            var json = await Http.GetStringAsync(AuthlibLatestUrl, timeout.Token).ConfigureAwait(false);
-            using var document = JsonDocument.Parse(json);
-            if (!document.RootElement.TryGetProperty("download_url", out var url) ||
-                url.GetString() is not { Length: > 0 } downloadUrl)
-            {
-                return null;
-            }
-
-            return await EnsureAgentAsync(targetPath, downloadUrl, cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception)
-        {
-            return null;
-        }
     }
 
     public void Dispose() => _chain.Dispose();

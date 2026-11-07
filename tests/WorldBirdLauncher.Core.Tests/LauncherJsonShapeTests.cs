@@ -168,7 +168,7 @@ public class LauncherJsonShapeTests
             GameRoot = @"D:\mc",
             VersionId = "1.16.4-fabric-loader_0.19.4",
             JavaPath = "javaw.exe",
-            Account = new AccountProfile { Kind = AccountKind.离线, Name = "Probe" },
+            Account = new AccountProfile { Name = "Probe" },
         };
 
         // StarLight 会把一堆 JVM 参数拼成一个超长参数项，这里模拟那种形状

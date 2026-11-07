@@ -10,11 +10,8 @@ namespace WorldBirdLauncher.App.Services;
 public sealed record SkinInfo(byte[] SkinPng, bool IsSlim, string Source);
 
 /// <summary>
-/// 按账户类型获取皮肤：
-/// 正版 → Mojang 会话服务（name→uuid→profile→textures）；
-/// 外置登录 → 该皮肤站的 Yggdrasil 接口；
-/// 离线账户 → 也用 ID 去 Mojang 查一次（查得到就用官方皮肤，查不到退回默认）；
-/// 结果（含"查不到"）缓存 24 小时，避免每次启动都重复请求。
+/// Resolves the Microsoft profile skin through Mojang's session service,
+/// caching both hits and misses for 24 hours.
 /// </summary>
 public sealed class SkinService
 {
@@ -35,7 +32,7 @@ public sealed class SkinService
             return null;
         }
 
-        // 用户在本机指定的皮肤文件优先级最高（离线账户最常见：ID 不是正版，哪里都查不到皮肤）
+        // A user-selected local skin takes precedence for previews and fallback rendering.
         var local = LocalSkinStore.Get(account);
         if (local is not null)
         {
@@ -51,18 +48,12 @@ public sealed class SkinService
 
         try
         {
-            return account.Kind switch
-            {
-                AccountKind.微软 => await ResolveMojangAsync(account.Uuid, account.Name, cancellationToken).ConfigureAwait(false),
-                AccountKind.外置 => await ResolveYggdrasilAsync(account, cancellationToken).ConfigureAwait(false),
-                // 离线账户没有验证，但 ID 若属于正版玩家就能拿到官方皮肤
-                AccountKind.离线 => await ResolveMojangAsync(null, account.Name, cancellationToken).ConfigureAwait(false),
-                _ => null,
-            };
+            return await ResolveMojangAsync(account.Uuid, account.Name, cancellationToken)
+                .ConfigureAwait(false);
         }
         catch (Exception ex)
         {
-            App.LogLine($"获取皮肤失败（{account.Kind}）：{ex.Message}");
+            App.LogLine($"获取皮肤失败（{account.Name}）：{ex.Message}");
             return null;
         }
     }
@@ -115,33 +106,6 @@ public sealed class SkinService
 
         profile.EnsureSuccessStatusCode();
         var parsed = ParseTextures(await profile.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false), "Mojang");
-        return await CacheAndDownloadAsync(key, parsed, cancellationToken).ConfigureAwait(false);
-    }
-
-    private static async Task<SkinInfo?> ResolveYggdrasilAsync(AccountProfile account, CancellationToken cancellationToken)
-    {
-        if (string.IsNullOrWhiteSpace(account.ServerUrl) || string.IsNullOrWhiteSpace(account.Uuid))
-        {
-            return null;
-        }
-
-        var root = account.ServerUrl!.TrimEnd('/');
-        var key = $"ygg:{root}:{account.Uuid}";
-        if (TryGetCache(key, out var cached))
-        {
-            return cached.Found ? await DownloadSkinAsync(cached.SkinUrl!, cached.IsSlim, cached.Source ?? root, cancellationToken).ConfigureAwait(false) : null;
-        }
-
-        var profile = await Http.GetAsync(
-            $"{root}/sessionserver/session/minecraft/profile/{account.Uuid}", cancellationToken).ConfigureAwait(false);
-        if (profile.StatusCode is HttpStatusCode.NoContent or HttpStatusCode.NotFound)
-        {
-            SaveCache(key, new CacheEntry(null, false, null, Found: false, DateTimeOffset.Now));
-            return null;
-        }
-
-        profile.EnsureSuccessStatusCode();
-        var parsed = ParseTextures(await profile.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false), root);
         return await CacheAndDownloadAsync(key, parsed, cancellationToken).ConfigureAwait(false);
     }
 
@@ -259,7 +223,7 @@ public sealed class SkinService
     private static HttpClient CreateClient()
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(20) };
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.1.1 (github.com/Themeda/WorldBirdLauncher)");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.2.0 (github.com/Themeda/WorldBirdLauncher)");
         return client;
     }
 }

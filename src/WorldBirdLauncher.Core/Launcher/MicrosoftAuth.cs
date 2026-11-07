@@ -8,11 +8,8 @@ using System.Text.Json;
 namespace WorldBirdLauncher.Core.Launcher;
 
 /// <summary>
-/// 微软正版登录：授权代码流 + PKCE + 回环重定向 → Xbox Live → XSTS →
-/// Minecraft 服务 → 正版档案。
-///
-/// 2026-10-20 用户确认：阉割版只保留「正版 / 外置 / 统一通行证」三种登录，
-/// 所以把原先只在探针脚本里跑通的链路正式接进客户端。
+/// Microsoft authentication: authorization code + PKCE + loopback redirect →
+/// Xbox Live → XSTS → Minecraft Services → profile.
 ///
 /// ★ 当前**仍卡在 Mojang 的允许清单**：第 ④ 步会返回
 /// <c>403 Invalid app registration</c>，这不是 Azure 配置错（①–③ 都能过）。
@@ -39,7 +36,7 @@ public static class MicrosoftAuth
     {
         var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         client.DefaultRequestHeaders.UserAgent.ParseAdd(
-            "WorldBirdLauncher/0.1.1 (+https://github.com/Themeda/WorldBirdLauncher)");
+            "WorldBirdLauncher/0.2.0 (+https://github.com/Themeda/WorldBirdLauncher)");
         client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
         return client;
     }
@@ -526,7 +523,7 @@ public static class MicrosoftAuth
             {
                 throw new MicrosoftAuthException(
                     "微软账号本身已验证通过，但本启动器的应用仍在 Mojang 的 Java 版允许清单审核中" +
-                    "（403 Invalid app registration）。审核通过前无法完成正版登录，请先用外置登录或统一通行证。");
+                    "（403 Invalid app registration）。审核通过前无法完成正版登录，请稍后重试。");
             }
 
             throw new MicrosoftAuthException(
@@ -550,11 +547,9 @@ public static class MicrosoftAuth
 
         return new AccountProfile
         {
-            Kind = AccountKind.微软,
             Name = name!,
             Uuid = uuid!,
             AccessToken = mcAccess!,
-            ClientToken = string.Empty,
             MicrosoftRefreshToken = token.RefreshToken,
             MicrosoftExpiresAt = DateTimeOffset.Now.AddSeconds(Math.Max(60, token.ExpiresInSeconds)),
         };

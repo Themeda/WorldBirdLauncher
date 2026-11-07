@@ -8,7 +8,7 @@ using WorldBirdLauncher.Core.Launcher;
 namespace WorldBirdLauncher.App.Views;
 
 /// <summary>
-/// 账号管理：列出本地保存的全部账号（**同一种登录方式可以有多条**），支持切换 / 登出 / 删除。
+/// Microsoft 账号管理：列出本地保存的全部正版账号，支持切换 / 登出 / 删除。
 /// 「登出」只清 token、条目保留（显示为已登出），「删除」才真的从列表里去掉。
 /// </summary>
 public partial class AccountSwitcherWindow : Window
@@ -123,8 +123,7 @@ public partial class AccountSwitcherWindow : Window
         });
         info.Children.Add(new TextBlock
         {
-            Text = $"{DescribeKind(account.Kind)} · {(signedOut ? "已登出（需要重新登录）" : "已登录")}"
-                   + (string.IsNullOrWhiteSpace(account.ServerUrl) ? string.Empty : $" · {account.ServerUrl}"),
+            Text = $"Microsoft 账户 · {(signedOut ? "已登出（需要重新登录）" : "已登录")}",
             FontSize = 11,
             Margin = new Thickness(0, 3, 0, 0),
             TextWrapping = TextWrapping.Wrap,
@@ -180,7 +179,9 @@ public partial class AccountSwitcherWindow : Window
     }
 
     private static bool SameAccount(AccountProfile left, AccountProfile right) =>
-        left.Kind == right.Kind && string.Equals(left.Name, right.Name, StringComparison.OrdinalIgnoreCase);
+        (!string.IsNullOrWhiteSpace(left.Uuid) && !string.IsNullOrWhiteSpace(right.Uuid)
+            ? string.Equals(left.Uuid, right.Uuid, StringComparison.OrdinalIgnoreCase)
+            : string.Equals(left.Name, right.Name, StringComparison.OrdinalIgnoreCase));
 
     /// <summary>
     /// 按账户类型取皮肤并裁成头部当头像；取不到就保留首字母。
@@ -210,16 +211,7 @@ public partial class AccountSwitcherWindow : Window
 
     private bool IsCurrent(AccountProfile account) =>
         _session.CurrentAccount is { } current &&
-        current.Kind == account.Kind &&
-        string.Equals(current.Name, account.Name, StringComparison.OrdinalIgnoreCase);
-
-    private static string DescribeKind(AccountKind kind) => kind switch
-    {
-        AccountKind.离线 => "离线账户",
-        AccountKind.外置 => "外置登录（Yggdrasil）",
-        AccountKind.统一通行证 => "统一通行证",
-        _ => "微软正版",
-    };
+        SameAccount(current, account);
 
     private void Use(AccountProfile account)
     {
@@ -255,7 +247,7 @@ public partial class AccountSwitcherWindow : Window
             if (!MessageWindow.Confirm(
                     this,
                     "删除账号",
-                    $"确定要从本地列表里删除「{account.Name}」吗？\n\n删除后需要重新输入账号密码才能再登录。",
+                    $"确定要从本地列表里删除「{account.Name}」吗？\n\n删除后需要重新完成 Microsoft 授权才能再登录。",
                     "删除",
                     "取消"))
             {
@@ -272,36 +264,15 @@ public partial class AccountSwitcherWindow : Window
         Rebuild();
     }
 
-    /// <summary>添加新账号：按当前账户类型弹登录窗（登录成功会自动 Upsert 进列表）。</summary>
+    /// <summary>添加 Microsoft 账号（登录成功会自动 Upsert 进列表）。</summary>
     private void OnAddAccount(object sender, RoutedEventArgs e)
     {
-        if (!AppEdition.AllowsOfflineLogin)
-        {
-            // 阉割版只有三种登录方式：先让用户选，再弹对应登录窗
-            var menu = new ContextMenu();
-            foreach (var (label, kind) in new[]
-                     {
-                         ("微软正版", AccountKind.微软),
-                         ("外置登录（Yggdrasil）", AccountKind.外置),
-                         ("统一通行证", AccountKind.统一通行证),
-                     })
-            {
-                var item = new MenuItem { Header = label };
-                item.Click += (_, _) => OpenLogin(kind);
-                menu.Items.Add(item);
-            }
-
-            menu.PlacementTarget = sender as UIElement;
-            menu.IsOpen = true;
-            return;
-        }
-
-        OpenLogin(_session.CurrentAccount?.Kind ?? AccountKind.离线);
+        OpenLogin();
     }
 
-    private void OpenLogin(AccountKind kind)
+    private void OpenLogin()
     {
-        var dialog = new LoginWindow(kind) { Owner = this };
+        var dialog = new LoginWindow { Owner = this };
         if (dialog.ShowDialog() == true)
         {
             Rebuild();

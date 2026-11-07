@@ -1,6 +1,5 @@
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using WorldBirdLauncher.App.Ads;
 using WorldBirdLauncher.App.Infrastructure;
 using WorldBirdLauncher.App.Services;
 using WorldBirdLauncher.Core.Models;
@@ -117,37 +116,6 @@ public sealed class ServerCardViewModel : ObservableObject
     public System.Windows.Visibility MotdVisibility =>
         HasMotd ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
 
-    // ---------- 推广卡（广告只从广告接口来，独立插入固定位置，不参与排序与筛选） ----------
-
-    private AdItem? _ad;
-
-    /// <summary>这条卡片是不是推广卡。</summary>
-    public bool IsAd => _ad is not null;
-
-    public AdItem? Ad => _ad;
-
-    public System.Windows.Visibility AdBadgeVisibility =>
-        IsAd ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
-
-    public System.Windows.Visibility AdActionVisibility =>
-        IsAd ? System.Windows.Visibility.Visible : System.Windows.Visibility.Collapsed;
-
-    /// <summary>把这张卡标记成推广卡（卡片模板会显示「推广」角标与「不感兴趣」）。</summary>
-    public void MarkAsAd(AdItem ad)
-    {
-        _ad = ad;
-        // 推广卡用"广告描述"填原来 MOTD 那一行（没有描述就整行收起），保证卡片有信息量
-        if (!string.IsNullOrWhiteSpace(ad.Description))
-        {
-            Motd = ad.Description;
-        }
-
-        OnPropertyChanged(nameof(IsAd));
-        OnPropertyChanged(nameof(Ad));
-        OnPropertyChanged(nameof(AdBadgeVisibility));
-        OnPropertyChanged(nameof(AdActionVisibility));
-    }
-
     public string LongDescription =>
         ServerTextFormatter.ToParagraphs(
             string.IsNullOrWhiteSpace(Entry.LongDescription) ? Entry.Description : Entry.LongDescription);
@@ -238,9 +206,21 @@ public sealed class ServerCardViewModel : ObservableObject
         _ => "白名单未标注",
     };
 
-    public string LoginModeText => string.IsNullOrWhiteSpace(Entry.LoginMode)
-        ? "未标注"
-        : ServerTextFormatter.StripColorCodes(Entry.LoginMode);
+    public string LoginModeText
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(Entry.LoginMode))
+            {
+                return "未标注";
+            }
+
+            var text = ServerTextFormatter.StripColorCodes(Entry.LoginMode);
+            return AccountMatcher.RequiresExternalAccount(Entry)
+                ? text + "（当前公开版仅支持 Microsoft，无法启动）"
+                : text;
+        }
+    }
 
     public string ServerTypeText => string.IsNullOrWhiteSpace(Entry.ServerType)
         ? "未标注"

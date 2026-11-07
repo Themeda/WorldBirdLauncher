@@ -33,7 +33,7 @@ public sealed class ModDownloadService
     {
         var client = new HttpClient { Timeout = TimeSpan.FromMinutes(10) };
         // Modrinth 要求带上可识别的 User-Agent
-        client.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.1.1 (github.com/Themeda/WorldBirdLauncher)");
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("WorldBirdLauncher/0.2.0 (github.com/Themeda/WorldBirdLauncher)");
         return client;
     }
 
