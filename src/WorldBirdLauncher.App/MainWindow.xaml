@@ -312,12 +312,41 @@
                                 </ItemsControl.ItemsPanel>
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Margin="0,0,12,12" Background="{DynamicResource SurfaceBrush}"
+                                        <Border Margin="3,3,15,15" Background="{DynamicResource SurfaceBrush}"
                                                 CornerRadius="12" BorderBrush="{DynamicResource BorderBrush2}"
                                                 BorderThickness="1" MouseLeftButtonUp="OnCardClick" Cursor="Hand"
                                                 Tag="{Binding}" Focusable="False"
                                                 HorizontalAlignment="Stretch"
-                                                VerticalAlignment="Top">
+                                                VerticalAlignment="Top" RenderTransformOrigin="0.5,0.5">
+                                            <Border.RenderTransform>
+                                                <ScaleTransform ScaleX="1" ScaleY="1" />
+                                            </Border.RenderTransform>
+                                            <Border.Triggers>
+                                                <EventTrigger RoutedEvent="MouseEnter">
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                             To="1.01" Duration="0:0:0.12" />
+                                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                             To="1.01" Duration="0:0:0.12" />
+                                                            <ThicknessAnimation Storyboard.TargetProperty="BorderThickness"
+                                                                                To="2" Duration="0:0:0.12" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                                <EventTrigger RoutedEvent="MouseLeave">
+                                                    <BeginStoryboard>
+                                                        <Storyboard>
+                                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleX)"
+                                                                             To="1" Duration="0:0:0.15" />
+                                                            <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
+                                                                             To="1" Duration="0:0:0.15" />
+                                                            <ThicknessAnimation Storyboard.TargetProperty="BorderThickness"
+                                                                                To="1" Duration="0:0:0.15" />
+                                                        </Storyboard>
+                                                    </BeginStoryboard>
+                                                </EventTrigger>
+                                            </Border.Triggers>
                                             <Grid Margin="14">
                                                 <Grid.RowDefinitions>
                                                     <RowDefinition Height="Auto" />

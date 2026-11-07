@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using WorldBirdLauncher.App.Services;
 using WorldBirdLauncher.Core.Launcher;
@@ -76,31 +77,37 @@ public partial class SettingsPage : UserControl
         SaveStatus.Text = "主题已预览，点「保存设置」后保留";
     }
 
-    private void OnAccentColorChanged(object sender, TextChangedEventArgs e)
+    private void OnSettingsTabMouseDown(object sender, MouseButtonEventArgs e)
     {
-        if (_suppressTheme || AccentPreview is null)
+        if (sender is TabItem tab)
         {
-            return;
+            SettingsTabs.SelectedItem = tab;
+            e.Handled = true;
         }
-
-        if (!ThemeManager.TryNormalizeAccent(AccentColorBox.Text, out var normalized))
-        {
-            SaveStatus.Text = "主题颜色格式应为 #RRGGBB";
-            return;
-        }
-
-        AccentPreview.Background = new SolidColorBrush(
-            (Color)ColorConverter.ConvertFromString(normalized));
-        ThemeManager.Apply(_session.Settings.ThemeMode, normalized);
-        SaveStatus.Text = "颜色已预览，点「保存设置」后保留";
     }
 
-    private void OnAccentPreset(object sender, RoutedEventArgs e)
+    private void OnPickAccentColor(object sender, RoutedEventArgs e)
     {
-        if ((sender as FrameworkElement)?.Tag is string value)
+        var current = ThemeManager.TryNormalizeAccent(AccentColorBox.Text, out var normalized)
+            ? (Color)ColorConverter.ConvertFromString(normalized)
+            : (Color)ColorConverter.ConvertFromString(ThemeManager.DefaultAccent);
+        using var dialog = new System.Windows.Forms.ColorDialog
         {
-            AccentColorBox.Text = value;
+            FullOpen = true,
+            Color = System.Drawing.Color.FromArgb(current.R, current.G, current.B),
+        };
+        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK)
+        {
+            return;
         }
+
+        var selected = dialog.Color;
+        var hex = $"#{selected.R:X2}{selected.G:X2}{selected.B:X2}";
+        AccentColorBox.Text = hex;
+        AccentPreview.Background = new SolidColorBrush(
+            (Color)ColorConverter.ConvertFromString(hex));
+        ThemeManager.Apply(_session.Settings.ThemeMode, hex);
+        SaveStatus.Text = "颜色已预览，点「保存设置」后保留";
     }
 
     /// <summary>显示服务端地址（只读）、当前数据版本与上次更新时间。</summary>

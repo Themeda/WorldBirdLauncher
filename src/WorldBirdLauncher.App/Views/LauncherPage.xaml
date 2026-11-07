@@ -182,7 +182,7 @@
                                 <DataTemplate>
                                     <Border Background="{DynamicResource SurfaceBrush}" CornerRadius="10"
                                             BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1"
-                                            Padding="14,12" Margin="0,0,0,10"
+                                            Padding="14,12" Margin="5,3,5,13"
                                             MouseLeftButtonUp="OnHotServerCardClick" Tag="{Binding}"
                                             Cursor="Hand" ToolTip="点击查看服务器详情" Focusable="False"
                                             RenderTransformOrigin="0.5,0.5">
@@ -197,6 +197,8 @@
                                                                          To="1.018" Duration="0:0:0.12" />
                                                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
                                                                          To="1.018" Duration="0:0:0.12" />
+                                                        <ThicknessAnimation Storyboard.TargetProperty="BorderThickness"
+                                                                            To="2" Duration="0:0:0.12" />
                                                     </Storyboard>
                                                 </BeginStoryboard>
                                             </EventTrigger>
@@ -207,6 +209,8 @@
                                                                          To="1" Duration="0:0:0.15" />
                                                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
                                                                          To="1" Duration="0:0:0.15" />
+                                                        <ThicknessAnimation Storyboard.TargetProperty="BorderThickness"
+                                                                            To="1" Duration="0:0:0.15" />
                                                     </Storyboard>
                                                 </BeginStoryboard>
                                             </EventTrigger>
@@ -307,7 +311,7 @@
                             </ItemsControl.ItemsPanel>
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Width="126" Margin="0,0,10,2" Padding="10,10,10,8" CornerRadius="10"
+                                    <Border Width="126" Margin="3,3,13,5" Padding="10,10,10,8" CornerRadius="10"
                                             Background="{DynamicResource SurfaceBrush}"
                                             BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1"
                                             RenderTransformOrigin="0.5,0.5">
@@ -322,6 +326,8 @@
                                                                          To="1.025" Duration="0:0:0.12" />
                                                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
                                                                          To="1.025" Duration="0:0:0.12" />
+                                                        <ThicknessAnimation Storyboard.TargetProperty="BorderThickness"
+                                                                            To="2" Duration="0:0:0.12" />
                                                     </Storyboard>
                                                 </BeginStoryboard>
                                             </EventTrigger>
@@ -332,6 +338,8 @@
                                                                          To="1" Duration="0:0:0.15" />
                                                         <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(ScaleTransform.ScaleY)"
                                                                          To="1" Duration="0:0:0.15" />
+                                                        <ThicknessAnimation Storyboard.TargetProperty="BorderThickness"
+                                                                            To="1" Duration="0:0:0.15" />
                                                     </Storyboard>
                                                 </BeginStoryboard>
                                             </EventTrigger>

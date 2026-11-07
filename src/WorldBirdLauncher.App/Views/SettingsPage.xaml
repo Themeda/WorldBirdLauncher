@@ -5,7 +5,7 @@
     <Grid>
         <TabControl x:Name="SettingsTabs" Margin="0,0,0,58" Background="Transparent"
                     BorderThickness="0">
-            <TabItem Header="外观">
+            <TabItem Header="外观" PreviewMouseLeftButtonDown="OnSettingsTabMouseDown">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="0,10,0,0">
                         <Border Style="{StaticResource Card}">
@@ -28,44 +28,18 @@
                             <StackPanel>
                                 <TextBlock Text="主题颜色" FontSize="14" FontWeight="SemiBold"
                                            Foreground="{DynamicResource TextPrimaryBrush}" />
-                                <TextBlock Text="自定义强调色会应用到按钮、选中态、链接与高亮。输入 #RRGGBB，或选择下面的常用颜色。"
+                                <TextBlock Text="自定义强调色会应用到按钮、选中态、链接与高亮。点击按钮打开 Windows 系统选色盘。"
                                            FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"
                                            Foreground="{DynamicResource TextMutedBrush}" />
                                 <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
                                     <Border x:Name="AccentPreview" Width="34" Height="34" CornerRadius="8"
                                             Background="{DynamicResource AccentBrush}"
                                             BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1" />
-                                    <TextBox x:Name="AccentColorBox" Width="150" Height="34" Margin="10,0,0,0"
-                                             TextChanged="OnAccentColorChanged" ToolTip="例如 #2B7FFF" />
-                                    <TextBlock Text="例如 #2B7FFF" FontSize="11" Margin="10,0,0,0"
-                                               VerticalAlignment="Center" Foreground="{DynamicResource TextMutedBrush}" />
+                                    <TextBox x:Name="AccentColorBox" Width="100" Height="34" Margin="10,0,0,0"
+                                             IsReadOnly="True" ToolTip="当前强调色" />
+                                    <Button Content="选择颜色…" Style="{StaticResource GhostButton}"
+                                            Height="34" Margin="10,0,0,0" Click="OnPickAccentColor" />
                                 </StackPanel>
-                                <WrapPanel Margin="0,12,0,0">
-                                    <Button Tag="#2B7FFF" Style="{StaticResource GhostButton}" Padding="8"
-                                            Margin="0,0,8,8" Click="OnAccentPreset" ToolTip="品牌蓝">
-                                        <Border Width="18" Height="18" CornerRadius="4" Background="#2B7FFF" />
-                                    </Button>
-                                    <Button Tag="#7C3AED" Style="{StaticResource GhostButton}" Padding="8"
-                                            Margin="0,0,8,8" Click="OnAccentPreset" ToolTip="紫罗兰">
-                                        <Border Width="18" Height="18" CornerRadius="4" Background="#7C3AED" />
-                                    </Button>
-                                    <Button Tag="#0F766E" Style="{StaticResource GhostButton}" Padding="8"
-                                            Margin="0,0,8,8" Click="OnAccentPreset" ToolTip="青绿">
-                                        <Border Width="18" Height="18" CornerRadius="4" Background="#0F766E" />
-                                    </Button>
-                                    <Button Tag="#DB2777" Style="{StaticResource GhostButton}" Padding="8"
-                                            Margin="0,0,8,8" Click="OnAccentPreset" ToolTip="玫红">
-                                        <Border Width="18" Height="18" CornerRadius="4" Background="#DB2777" />
-                                    </Button>
-                                    <Button Tag="#DC2626" Style="{StaticResource GhostButton}" Padding="8"
-                                            Margin="0,0,8,8" Click="OnAccentPreset" ToolTip="红色">
-                                        <Border Width="18" Height="18" CornerRadius="4" Background="#DC2626" />
-                                    </Button>
-                                    <Button Tag="#EA580C" Style="{StaticResource GhostButton}" Padding="8"
-                                            Margin="0,0,8,8" Click="OnAccentPreset" ToolTip="橙色">
-                                        <Border Width="18" Height="18" CornerRadius="4" Background="#EA580C" />
-                                    </Button>
-                                </WrapPanel>
                             </StackPanel>
                         </Border>
 
@@ -88,7 +62,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="启动与 Java">
+            <TabItem Header="启动与 Java" PreviewMouseLeftButtonDown="OnSettingsTabMouseDown">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="0,10,0,0">
                         <Border Style="{StaticResource Card}">
@@ -155,7 +129,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="下载与网络">
+            <TabItem Header="下载与网络" PreviewMouseLeftButtonDown="OnSettingsTabMouseDown">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="0,10,0,0">
                         <Border Style="{StaticResource Card}">
@@ -194,7 +168,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="维护">
+            <TabItem Header="维护" PreviewMouseLeftButtonDown="OnSettingsTabMouseDown">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="0,10,0,0">
                         <Border Style="{StaticResource Card}">
@@ -228,7 +202,7 @@
                 </ScrollViewer>
             </TabItem>
 
-            <TabItem Header="关于">
+            <TabItem Header="关于" PreviewMouseLeftButtonDown="OnSettingsTabMouseDown">
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                     <StackPanel MaxWidth="760" HorizontalAlignment="Left" Margin="0,10,0,0">
                         <Border Style="{StaticResource Card}">
@@ -245,18 +219,12 @@
             </TabItem>
         </TabControl>
 
-        <Border HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,8"
-                Padding="12,8" CornerRadius="10" Background="{DynamicResource SurfaceBrush}"
-                BorderBrush="{DynamicResource BorderBrush2}" BorderThickness="1">
-            <Border.Effect>
-                <DropShadowEffect BlurRadius="16" ShadowDepth="3" Opacity="0.18" />
-            </Border.Effect>
-            <StackPanel Orientation="Horizontal">
-                <TextBlock x:Name="SaveStatus" FontSize="11" Margin="0,0,12,0"
-                           VerticalAlignment="Center" Foreground="{DynamicResource SuccessBrush}" />
-                <Button Content="保存设置" Style="{StaticResource PrimaryButton}" MinWidth="96"
-                        Click="OnSave" />
-            </StackPanel>
-        </Border>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                    Margin="0,0,8,8" Background="Transparent">
+            <TextBlock x:Name="SaveStatus" FontSize="11" Margin="0,0,12,0"
+                       VerticalAlignment="Center" Foreground="{DynamicResource SuccessBrush}" />
+            <Button Content="保存设置" Style="{StaticResource PrimaryButton}" MinWidth="96"
+                    Click="OnSave" />
+        </StackPanel>
     </Grid>
 </UserControl>
