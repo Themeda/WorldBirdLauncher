@@ -1,7 +1,6 @@
 using System.Diagnostics;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using System.Windows.Media;
 using WorldBirdLauncher.App.Services;
 using WorldBirdLauncher.Core.Launcher;
@@ -77,13 +76,23 @@ public partial class SettingsPage : UserControl
         SaveStatus.Text = "主题已预览，点「保存设置」后保留";
     }
 
-    private void OnSettingsTabMouseDown(object sender, MouseButtonEventArgs e)
+    private void OnSettingsSectionChanged(object sender, RoutedEventArgs e)
     {
-        if (sender is TabItem tab)
+        if (SettingsPanelAppearance is null || SettingsPanelStartup is null ||
+            SettingsPanelNetwork is null || SettingsPanelAbout is null)
         {
-            SettingsTabs.SelectedItem = tab;
-            e.Handled = true;
+            return;
         }
+
+        var section = (sender as FrameworkElement)?.Tag as string;
+        SettingsPanelAppearance.Visibility =
+            section == "appearance" ? Visibility.Visible : Visibility.Collapsed;
+        SettingsPanelStartup.Visibility =
+            section == "startup" ? Visibility.Visible : Visibility.Collapsed;
+        SettingsPanelNetwork.Visibility =
+            section == "network" ? Visibility.Visible : Visibility.Collapsed;
+        SettingsPanelAbout.Visibility =
+            section == "about" ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void OnPickAccentColor(object sender, RoutedEventArgs e)

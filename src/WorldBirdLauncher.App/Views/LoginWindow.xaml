@@ -3,6 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="微软正版登录" Width="420" SizeToContent="Height"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        FontFamily="Source Han Sans SC, Segoe UI, Noto Sans, sans-serif"
         ResizeMode="NoResize" ShowInTaskbar="False" WindowStartupLocation="CenterOwner">
     <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource BorderBrush}"
             BorderThickness="1" CornerRadius="12" Padding="20">
@@ -15,7 +16,7 @@
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0">
-                <TextBlock x:Name="TitleText" Text="微软正版登录" FontSize="16" FontWeight="SemiBold"
+                <TextBlock x:Name="TitleText" Text="微软正版登录" FontSize="16" FontWeight="Bold"
                            Foreground="{DynamicResource TextPrimaryBrush}" />
                 <Button Content="✕" Style="{StaticResource CloseTitleBarButton}" HorizontalAlignment="Right"
                         Click="OnCancel" />

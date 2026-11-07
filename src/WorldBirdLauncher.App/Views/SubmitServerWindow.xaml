@@ -4,7 +4,7 @@
         Title="提交服务器" Width="620" Height="640" MinHeight="520"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
-        FontFamily="Microsoft YaHei UI, Segoe UI">
+        FontFamily="Source Han Sans SC, Segoe UI, Noto Sans, sans-serif">
     <Border Background="{DynamicResource BgBrush}" CornerRadius="12" BorderBrush="{DynamicResource BorderBrush2}"
             BorderThickness="1">
         <Border.Resources>
@@ -28,7 +28,7 @@
             </Grid.RowDefinitions>
 
             <Grid Grid.Row="0" Height="38" Background="Transparent" MouseLeftButtonDown="OnTitleBarDrag">
-                <TextBlock Text="提交服务器" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"
+                <TextBlock Text="提交服务器" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"
                            Margin="16,0,0,0" Foreground="{DynamicResource TextPrimaryBrush}" />
                 <Button Content="✕" Style="{StaticResource CloseTitleBarButton}" HorizontalAlignment="Right"
                         Click="OnCancel" />
@@ -61,7 +61,7 @@
 
                     <!-- 手动填写模式 -->
                     <StackPanel x:Name="FormPanel" Margin="0,14,0,0" Visibility="Collapsed">
-                        <TextBlock Text="必填项" FontSize="12" FontWeight="SemiBold"
+                        <TextBlock Text="必填项" FontSize="12" FontWeight="Bold"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="服务器名称 *" Style="{StaticResource FieldLabel}" />
                         <TextBox x:Name="NameBox" Height="32" ToolTip="例如：方块转生 / 梦想天堂" />
@@ -73,7 +73,7 @@
                                        Foreground="{DynamicResource TextSecondaryBrush}" />
                             <TextBox x:Name="PortBox" Width="90" Height="32" Text="25565" ToolTip="默认 25565" />
                         </StackPanel>
-                        <TextBlock Text="选填项（填得越全，审核越快）" FontSize="12" FontWeight="SemiBold" Margin="0,14,0,0"
+                        <TextBlock Text="选填项（填得越全，审核越快）" FontSize="12" FontWeight="Bold" Margin="0,14,0,0"
                                    Foreground="{DynamicResource TextPrimaryBrush}" />
                         <TextBlock Text="支持版本 / 跨版本区间（可空）" Style="{StaticResource FieldLabel}" />
                         <StackPanel Orientation="Horizontal">
